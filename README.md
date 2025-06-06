@@ -84,7 +84,9 @@ class StatusWidget(BaseWidget):
 
 ## Documentation
 
-Full documentation is available at [https://hyper-core.readthedocs.io](https://hyper-core.readthedocs.io)
+- **[Architecture Guide](architecture.md)** - High-level system architecture and component interactions
+- **[Plugin Development Guide](plugin-guide.md)** - Complete guide for developing plugins
+- Full documentation is available at [https://hyper-core.readthedocs.io](https://hyper-core.readthedocs.io)
 
 ## License
 

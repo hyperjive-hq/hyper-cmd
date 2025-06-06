@@ -27,36 +27,82 @@ Example:
 """
 
 import curses
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple, Callable
 
 
-@dataclass
 class ThemeColors:
     """Color definitions for UI elements.
     
-    Each color is defined as a tuple of (foreground, background) where:
-    - Foreground/background values are curses color constants (COLOR_*)
-    - Background of -1 means transparent/default terminal background
-    
-    These colors map to ncurses color pairs that are initialized when
-    the theme is activated.
+    Supports both RGB tuples (for testing/configuration) and curses color constants.
+    RGB values are preserved for external access, curses values used internally.
     """
-    # Semantic colors for different states/purposes
-    default: Tuple[int, int] = (curses.COLOR_WHITE, -1)
-    primary: Tuple[int, int] = (curses.COLOR_GREEN, -1)
-    secondary: Tuple[int, int] = (curses.COLOR_BLUE, -1)
-    accent: Tuple[int, int] = (curses.COLOR_CYAN, -1)
-    warning: Tuple[int, int] = (curses.COLOR_YELLOW, -1)
-    error: Tuple[int, int] = (curses.COLOR_RED, -1)
-    success: Tuple[int, int] = (curses.COLOR_GREEN, -1)
-    info: Tuple[int, int] = (curses.COLOR_CYAN, -1)
     
-    # UI element specific colors
-    border: Tuple[int, int] = (curses.COLOR_GREEN, -1)
-    header_bg: Tuple[int, int] = (curses.COLOR_BLACK, curses.COLOR_GREEN)
-    selected: Tuple[int, int] = (curses.COLOR_BLACK, curses.COLOR_YELLOW)
-    disabled: Tuple[int, int] = (curses.COLOR_RED, -1)
+    def __init__(self, **kwargs):
+        """Initialize theme colors with default values."""
+        # Default values (curses colors)
+        self._defaults = {
+            'default': (curses.COLOR_WHITE, -1),
+            'primary': (curses.COLOR_GREEN, -1),
+            'secondary': (curses.COLOR_BLUE, -1),
+            'accent': (curses.COLOR_CYAN, -1),
+            'warning': (curses.COLOR_YELLOW, -1),
+            'error': (curses.COLOR_RED, -1),
+            'success': (curses.COLOR_GREEN, -1),
+            'info': (curses.COLOR_CYAN, -1),
+            'border': (curses.COLOR_GREEN, -1),
+            'header_bg': (curses.COLOR_BLACK, curses.COLOR_GREEN),
+            'selected': (curses.COLOR_BLACK, curses.COLOR_YELLOW),
+            'disabled': (curses.COLOR_RED, -1),
+            'background': (curses.COLOR_BLACK, -1),
+            'text': (curses.COLOR_WHITE, -1)
+        }
+        
+        # Initialize all attributes with defaults
+        for key, default_value in self._defaults.items():
+            setattr(self, key, default_value)
+        
+        # Override with provided values
+        for key, value in kwargs.items():
+            if key in self._defaults:
+                setattr(self, key, value)
+    
+    def get_curses_colors(self) -> Dict[str, Tuple[int, int]]:
+        """Get curses-compatible color pairs for terminal rendering."""
+        result = {}
+        for key in self._defaults:
+            value = getattr(self, key)
+            if isinstance(value, tuple) and len(value) == 3:
+                # RGB tuple - convert to curses colors
+                result[key] = self._rgb_to_curses(value)
+            else:
+                # Already curses colors
+                result[key] = value
+        return result
+    
+    def _rgb_to_curses(self, rgb: Tuple[int, int, int]) -> Tuple[int, int]:
+        """Convert RGB tuple to curses color pair."""
+        r, g, b = rgb
+        
+        # Simple mapping to closest curses color
+        if r > 200 and g > 200 and b > 200:
+            return (curses.COLOR_WHITE, -1)
+        elif r < 50 and g < 50 and b < 50:
+            return (curses.COLOR_BLACK, -1)
+        elif r > g and r > b:
+            return (curses.COLOR_RED, -1)
+        elif g > r and g > b:
+            return (curses.COLOR_GREEN, -1)
+        elif b > r and b > g:
+            return (curses.COLOR_BLUE, -1)
+        elif r > 150 and g > 150:
+            return (curses.COLOR_YELLOW, -1)
+        elif r > 150 and b > 150:
+            return (curses.COLOR_MAGENTA, -1)
+        elif g > 150 and b > 150:
+            return (curses.COLOR_CYAN, -1)
+        else:
+            return (curses.COLOR_WHITE, -1)
     
     def to_dict(self) -> Dict[str, Tuple[int, int]]:
         """Convert colors to a dictionary for easier access."""
@@ -73,19 +119,25 @@ class ThemeColors:
             'header_bg': self.header_bg,
             'selected': self.selected,
             'disabled': self.disabled,
+            'background': self.background,
+            'text': self.text,
         }
 
 
-@dataclass
 class Theme:
     """Theme definition for Hyper Core UI.
     
     A theme encapsulates all color definitions and can be applied
     to change the appearance of the entire UI.
     """
-    name: str
-    description: str = ""
-    colors: ThemeColors = field(default_factory=ThemeColors)
+    
+    def __init__(self, name: str, colors: ThemeColors = None, description: str = "", 
+                 author: str = "", version: str = "1.0.0"):
+        self.name = name
+        self.description = description
+        self.author = author
+        self.version = version
+        self.colors = colors if colors is not None else ThemeColors()
     
     # Color pair ID mapping - matches BaseWidget color constants
     COLOR_PAIR_MAPPING = {
@@ -103,25 +155,19 @@ class Theme:
         13: 'disabled',
     }
     
-    def activate(self) -> None:
-        """Activate this theme by initializing ncurses color pairs.
+    def activate(self, renderer_backend) -> None:
+        """Activate this theme by initializing colors through the rendering backend.
         
-        This method should be called after curses.start_color() to
-        set up all the color pairs defined by this theme.
+        Args:
+            renderer_backend: The rendering backend to use for color initialization.
+                             Must implement init_theme_colors(theme) method.
         """
-        if not curses.has_colors():
-            return  # Terminal doesn't support colors
-        
-        colors_dict = self.colors.to_dict()
-        
-        for pair_id, color_name in self.COLOR_PAIR_MAPPING.items():
-            if color_name in colors_dict:
-                fg, bg = colors_dict[color_name]
-                try:
-                    curses.init_pair(pair_id, fg, bg)
-                except curses.error:
-                    # Ignore errors (e.g., invalid color values)
-                    pass
+        # Delegate theme color initialization to the rendering backend
+        try:
+            renderer_backend.init_theme_colors(self)
+        except (AttributeError, Exception):
+            # Backend doesn't support theme color initialization or other error
+            pass
 
 
 # Pre-defined themes
@@ -172,11 +218,24 @@ class ThemeManager:
             "dark": DARK_THEME,
         }
         self._current_theme_name = "default"
+        self._callbacks: List[Callable] = []
     
     @property
     def current_theme(self) -> Theme:
         """Get the currently active theme."""
         return self._themes[self._current_theme_name]
+    
+    def get_current_theme(self) -> Theme:
+        """Get the currently active theme (method version for compatibility)."""
+        return self.current_theme
+    
+    def get_available_themes(self) -> List[str]:
+        """Get a list of available theme names."""
+        return self.list_themes()
+    
+    def add_theme_change_callback(self, callback: Callable) -> None:
+        """Add a callback to be called when theme changes."""
+        self._callbacks.append(callback)
     
     def register_theme(self, theme: Theme) -> None:
         """Register a new theme.
@@ -191,11 +250,12 @@ class ThemeManager:
             raise ValueError(f"Theme '{theme.name}' already registered")
         self._themes[theme.name] = theme
     
-    def set_theme(self, name: str) -> None:
+    def set_theme(self, name: str, renderer_backend) -> None:
         """Set the active theme by name.
         
         Args:
             name: Name of the theme to activate
+            renderer_backend: Rendering backend for color initialization
             
         Raises:
             KeyError: If theme name not found
@@ -203,9 +263,20 @@ class ThemeManager:
         if name not in self._themes:
             raise KeyError(f"Theme '{name}' not found. Available: {self.list_themes()}")
         
+        old_theme = self._current_theme_name
         self._current_theme_name = name
+        
         # Activate the theme's colors
-        self._themes[name].activate()
+        self._themes[name].activate(renderer_backend)
+        
+        # Call callbacks with theme objects
+        for callback in self._callbacks:
+            try:
+                old_theme_obj = self._themes.get(old_theme)
+                new_theme_obj = self._themes[name]
+                callback(old_theme_obj, new_theme_obj)
+            except Exception:
+                pass  # Ignore callback errors
     
     def get_theme(self, name: str) -> Theme:
         """Get a theme by name.

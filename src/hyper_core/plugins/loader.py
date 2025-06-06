@@ -161,6 +161,32 @@ class PluginLoader:
     - Managing the plugin namespace (hyper_plugins.*)
     """
     
+    def __init__(self):
+        """Initialize the plugin loader."""
+        self._loaded_plugins = []
+        self._search_paths = [
+            Path.cwd() / "plugins",  # ./plugins
+            Path.home() / ".hyper" / "plugins",  # ~/.hyper/plugins
+        ]
+    
+    def add_search_path(self, path: str) -> None:
+        """Add a directory to search for plugins."""
+        self._search_paths.append(Path(path))
+    
+    def discover_plugins(self) -> None:
+        """Discover and load plugins from all search paths."""
+        for search_path in self._search_paths:
+            if search_path.exists() and search_path.is_dir():
+                discovery = PluginDiscovery(str(search_path))
+                for plugin_path in discovery.discover():
+                    plugin_info = self.load_plugin(str(plugin_path))
+                    if plugin_info:
+                        self._loaded_plugins.append(plugin_info)
+    
+    def get_loaded_plugins(self) -> List[Any]:
+        """Get all loaded plugin modules."""
+        return [plugin.get('module') for plugin in self._loaded_plugins if plugin.get('module')]
+    
     def load_plugin(self, plugin_path: str) -> Optional[Dict[str, Any]]:
         """Load a plugin from a directory path.
         
@@ -183,6 +209,7 @@ class PluginLoader:
         
         # Extract and merge plugin information
         plugin_info = self._extract_plugin_info(module, manifest)
+        plugin_info['module'] = module  # Store the module reference
         
         # Ensure module is registered in sys.modules
         self._register_module(plugin_name, module)
@@ -243,28 +270,12 @@ class PluginLoader:
     
     @staticmethod
     def load_plugin_module(plugin_path: Path, plugin_name: str) -> Optional[Any]:
-        """Static method for loading a plugin module (used by registry).
-        
-        Args:
-            plugin_path: Path to plugin directory
-            plugin_name: Name of the plugin
-            
-        Returns:
-            Loaded module or None if loading failed
-        """
+        """Static method for loading a plugin module (used by registry)."""
         loader = PluginLoader()
         return loader._load_plugin_module(plugin_path, plugin_name)
     
     @staticmethod
     def extract_plugin_info(module: Any, manifest: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Static method for extracting plugin info (used by registry).
-        
-        Args:
-            module: Loaded plugin module
-            manifest: Optional manifest data
-            
-        Returns:
-            Dictionary containing plugin information
-        """
+        """Static method for extracting plugin info (used by registry)."""
         loader = PluginLoader()
         return loader._extract_plugin_info(module, manifest)

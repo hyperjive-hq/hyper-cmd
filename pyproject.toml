@@ -43,6 +43,9 @@ dev = [
     "mypy>=1.0",
 ]
 
+[project.scripts]
+hyper = "hyper_core.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/hyperjive/hyper-core"
 Documentation = "https://hyper-core.readthedocs.io"

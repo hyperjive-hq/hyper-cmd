@@ -19,15 +19,15 @@ class CommandRegistry:
             command_class: The command class to register
             name: Optional name override (uses command.name if not provided)
         """
-        if not hasattr(command_class, 'name'):
-            # Try to instantiate to get the name
+        # Always try to instantiate to get the name from the instance
+        if name:
+            cmd_name = name
+        else:
             try:
                 instance = command_class(None)
                 cmd_name = instance.name
             except:
                 cmd_name = command_class.__name__.lower().replace('command', '')
-        else:
-            cmd_name = name or command_class.name
         
         self._commands[cmd_name] = command_class
     
@@ -73,3 +73,19 @@ class CommandRegistry:
     def clear(self) -> None:
         """Clear all registered commands."""
         self._commands.clear()
+    
+    def create_command(self, name: str, container) -> Optional[ICommand]:
+        """
+        Create a command instance by name.
+        
+        Args:
+            name: The command name
+            container: Dependency injection container
+            
+        Returns:
+            Command instance or None if not found
+        """
+        command_class = self.get(name)
+        if command_class:
+            return command_class(container)
+        return None

@@ -3,6 +3,7 @@
 from unittest.mock import Mock
 
 from hyper_core.ui import BaseWidget, Theme, ThemeColors, ThemeManager, WidgetSize
+from hyper_core.ui.renderer import MockBackend
 
 
 class ThemedWidget(BaseWidget):
@@ -213,6 +214,7 @@ class TestThemeManager:
     def setup_method(self):
         """Set up test environment."""
         self.theme_manager = ThemeManager()
+        self.mock_backend = MockBackend()
 
     def test_default_themes_available(self):
         """Test that default themes are available."""
@@ -233,7 +235,7 @@ class TestThemeManager:
         # Try to switch to dark theme
         available_themes = self.theme_manager.get_available_themes()
         if "dark" in available_themes:
-            self.theme_manager.set_theme("dark")
+            self.theme_manager.set_theme("dark", self.mock_backend)
             current_theme = self.theme_manager.get_current_theme()
             assert current_theme.name == "dark"
 
@@ -261,7 +263,7 @@ class TestThemeManager:
         assert "neon" in available_themes
 
         # Switch to custom theme
-        self.theme_manager.set_theme("neon")
+        self.theme_manager.set_theme("neon", self.mock_backend)
         current_theme = self.theme_manager.get_current_theme()
         assert current_theme.name == "neon"
         assert current_theme.colors.primary == (255, 20, 147)
@@ -296,7 +298,7 @@ class TestThemeManager:
         self.theme_manager.register_theme(test_theme)
 
         # Switch theme
-        self.theme_manager.set_theme("test")
+        self.theme_manager.set_theme("test", self.mock_backend)
 
         # Verify callback was called
         assert callback_called
@@ -328,7 +330,7 @@ class TestThemeManager:
         self.theme_manager.register_theme(custom_theme)
 
         # Set theme and save preference
-        self.theme_manager.set_theme("purple")
+        self.theme_manager.set_theme("purple", self.mock_backend)
         save_theme_preference("purple")
 
         # Simulate loading preferences in new session
@@ -336,7 +338,7 @@ class TestThemeManager:
         assert preferred_theme == "purple"
 
         # Apply loaded preference
-        self.theme_manager.set_theme(preferred_theme)
+        self.theme_manager.set_theme(preferred_theme, self.mock_backend)
         current_theme = self.theme_manager.get_current_theme()
         assert current_theme.name == "purple"
 
@@ -388,19 +390,20 @@ class TestThemedWidgets:
             success=(144, 238, 144),  # Light green
         )
 
-        light_theme = Theme("light", light_colors)
-        dark_theme = Theme("dark", dark_colors)
+        light_theme = Theme("light_custom", light_colors)
+        dark_theme = Theme("dark_custom", dark_colors)
 
         theme_manager.register_theme(light_theme)
         theme_manager.register_theme(dark_theme)
+        mock_backend = MockBackend()
 
         # Test with light theme
-        theme_manager.set_theme("light")
+        theme_manager.set_theme("light_custom", mock_backend)
         light_current = theme_manager.get_current_theme()
         assert light_current.colors.background == (255, 255, 255)
 
         # Test with dark theme
-        theme_manager.set_theme("dark")
+        theme_manager.set_theme("dark_custom", mock_backend)
         dark_current = theme_manager.get_current_theme()
         assert dark_current.colors.background == (0, 0, 0)
 
@@ -433,8 +436,12 @@ class TestThemeCompatibility:
         """Test handling of invalid theme requests."""
         theme_manager = ThemeManager()
 
-        # Try to set non-existent theme
-        theme_manager.set_theme("nonexistent")
+        # Try to set non-existent theme  
+        mock_backend = MockBackend()
+        try:
+            theme_manager.set_theme("nonexistent", mock_backend)
+        except KeyError:
+            pass  # Expected behavior
 
         # Should still have a valid theme (likely unchanged)
         current_theme = theme_manager.get_current_theme()
@@ -485,11 +492,12 @@ class TestThemeCompatibility:
 
         # Test rapid theme switching
         import time
+        mock_backend = MockBackend()
 
         start_time = time.time()
 
         for theme in themes:
-            theme_manager.set_theme(theme.name)
+            theme_manager.set_theme(theme.name, mock_backend)
 
         end_time = time.time()
 

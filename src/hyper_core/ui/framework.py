@@ -1,293 +1,194 @@
 """
-Reusable NCurses Framework for Hyper Script
-Provides a flexible layout system with menu navigation and content areas.
+Modern NCurses Framework for Hyper using Rendering Engine
+
+Clean, optimized UI framework built on the rendering engine architecture.
+Provides consistent, flicker-free rendering with proper state management.
 """
 
 import curses
-import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Callable, Any
-from enum import Enum
+from typing import Optional, Callable, Any
+
+from .engine import RenderEngine, UIComponent, RenderContext
+from .components import ApplicationFrame
 
 
-class MenuAlignment(Enum):
-    LEFT = "left"
-    CENTER = "center"
-    RIGHT = "right"
-
-
-@dataclass
-class MenuItem:
-    """Represents a menu item"""
-    key: str
-    label: str
-    description: str
-    action: Optional[Callable] = None
-    enabled: bool = True
-
-
-@dataclass
-class LayoutConfig:
-    """Configuration for the ncurses layout"""
-    title: str = "HYPER INTERFACE"
-    subtitle: str = ""
-    menu_alignment: MenuAlignment = MenuAlignment.CENTER
-    show_borders: bool = True
-    show_help: bool = True
-    theme: Optional[Any] = None
-
-
-class ContentPanel(ABC):
-    """
-    Abstract base class for content panels.
+class ContentPanel(UIComponent):
+    """Base class for content panels in the framework."""
     
-    Content panels are responsible for rendering and managing their own content
-    within the main content area of the ncurses layout. Each panel operates
-    independently and must handle its own state management.
-    """
+    def __init__(self, title: str = ""):
+        super().__init__()
+        self.title = title
     
-    def __init__(self):
-        self._needs_refresh = True
-        self._data = {}
-        
-    @abstractmethod
-    def draw(self, win, height: int, width: int) -> None:
-        """
-        Draw the panel content.
-        
-        Args:
-            win: NCurses window object for the content area
-            height: Available height for content
-            width: Available width for content
-        """
-        pass
-        
-    @abstractmethod
     def handle_input(self, key: int) -> Optional[str]:
-        """
-        Handle keyboard input.
-        
-        Args:
-            key: The pressed key code
+        """Handle input - override in subclasses."""
+        if key == ord('b') or key == ord('B'):
+            return 'back'
+        return None
+    
+    def get_size_hint(self) -> tuple[int, int]:
+        """Content panels fill available space by default."""
+        return (0, 0)
+    
+    def render_content(self, ctx: RenderContext) -> None:
+        """Override to implement panel content rendering."""
+        # Default: show title and help
+        try:
+            if self.title:
+                ctx.window.addstr(
+                    ctx.y + 1, ctx.x + 2,
+                    self.title[:ctx.width - 4],
+                    curses.A_BOLD
+                )
             
-        Returns:
-            Optional navigation command ('back', 'quit', etc.)
-        """
-        pass
-        
-    def refresh(self) -> None:
-        """Mark the panel as needing refresh"""
-        self._needs_refresh = True
-        
-    def needs_refresh(self) -> bool:
-        """Check if the panel needs to be redrawn"""
-        return self._needs_refresh
-        
-    def set_data(self, key: str, value: Any) -> None:
-        """Set data for the panel"""
-        self._data[key] = value
-        self.refresh()
+            help_text = "Press 'b' to go back"
+            ctx.window.addstr(
+                ctx.y + ctx.height - 2, ctx.x + 2,
+                help_text[:ctx.width - 4]
+            )
+        except curses.error:
+            pass
 
 
 class NCursesFramework:
     """
-    Main framework class that provides a reusable ncurses layout.
+    Modern NCurses framework using the rendering engine.
     
-    Features:
-    - Header with title and subtitle
-    - Menu area with navigation options
-    - Main content area for panels
-    - Status bar with help text
-    - Configurable theme support
+    Provides optimized rendering with:
+    - Automatic dirty checking and minimal redraws
+    - Smooth double-buffered updates
+    - Clean component lifecycle management
+    - Event-driven architecture
     """
     
-    def __init__(self, config: LayoutConfig):
-        self.config = config
-        self.menu_items: List[MenuItem] = []
-        self.current_panel: Optional[ContentPanel] = None
+    def __init__(self, title: str = "HYPER INTERFACE", subtitle: str = ""):
         self.running = False
-        self._status_message = ""
-        self._status_time = 0
+        self._render_engine: Optional[RenderEngine] = None
         
-        # Initialize ncurses
-        self.stdscr = None
-        self.colors_initialized = False
+        # Create application frame with rendering engine
+        self.app_frame = ApplicationFrame(title, subtitle)
+        self.current_panel: Optional[ContentPanel] = None
         
-    def add_menu_item(self, item: MenuItem) -> None:
-        """Add a menu item to the framework"""
-        self.menu_items.append(item)
+        # Setup default behavior
+        self._setup_defaults()
+    
+    def _setup_defaults(self) -> None:
+        """Setup default menu items and behaviors."""
+        self.add_menu_item('q', 'Quit', self._quit_action)
+    
+    def _quit_action(self) -> str:
+        """Default quit action."""
+        self.running = False
+        return 'quit'
+    
+    def add_menu_item(self, key: str, label: str, action: Optional[Callable] = None) -> None:
+        """Add a menu item to the application."""
+        def wrapped_action():
+            if action:
+                result = action()
+                if result == 'quit':
+                    self.running = False
+                return result
+            return None
         
+        self.app_frame.add_menu_item(key, label, wrapped_action)
+    
     def set_panel(self, panel: ContentPanel) -> None:
-        """Set the current content panel"""
+        """Set the current content panel."""
         self.current_panel = panel
         if panel:
-            panel.refresh()
-            
+            self.app_frame.set_content(panel)
+    
     def set_status(self, message: str, duration: float = 3.0) -> None:
-        """Display a temporary status message"""
-        self._status_message = message
-        self._status_time = time.time() + duration
-        
+        """Display a temporary status message."""
+        self.app_frame.set_status_message(message, duration)
+    
     def run(self) -> None:
-        """Run the main ncurses loop"""
+        """Run the main application loop."""
         try:
             curses.wrapper(self._main_loop)
         except KeyboardInterrupt:
             pass
-            
+    
     def _main_loop(self, stdscr) -> None:
-        """Main ncurses loop"""
-        self.stdscr = stdscr
-        self._setup_curses()
+        """Main application loop with rendering engine."""
+        # Create NCurses backend and setup with stdscr
+        from .renderer import NCursesBackend
+        backend = NCursesBackend()
+        backend.setup(stdscr)
+        
+        # Initialize rendering engine
+        self._render_engine = RenderEngine(backend)
+        self._render_engine.set_root_component(self.app_frame)
         
         self.running = True
+        
         while self.running:
-            self._draw_layout()
+            # Render frame (only if needed - engine handles optimization)
+            self._render_engine.render_frame()
             
             # Handle input
-            key = self.stdscr.getch()
-            self._handle_input(key)
+            key = backend.get_input(50)  # 50ms timeout
+            if key != -1:  # Only process actual input
+                self._handle_input(key)
             
-            # Small delay to prevent high CPU usage
-            curses.napms(50)
-            
-    def _setup_curses(self) -> None:
-        """Initialize curses settings"""
-        curses.curs_set(0)  # Hide cursor
-        self.stdscr.nodelay(True)  # Non-blocking input
-        self.stdscr.keypad(True)  # Enable special keys
-        
-        # Initialize colors if available
-        if curses.has_colors() and self.config.theme:
-            curses.start_color()
-            self.colors_initialized = True
-            # Theme initialization would go here
-            
-    def _draw_layout(self) -> None:
-        """Draw the complete layout"""
-        height, width = self.stdscr.getmaxyx()
-        self.stdscr.clear()
-        
-        # Draw header
-        header_height = self._draw_header(height, width)
-        
-        # Draw menu
-        menu_height = self._draw_menu(header_height, width)
-        
-        # Draw content area
-        content_start = header_height + menu_height
-        content_height = height - content_start - 2  # Leave room for status
-        if content_height > 0 and self.current_panel:
-            self._draw_content(content_start, content_height, width)
-            
-        # Draw status bar
-        self._draw_status(height - 1, width)
-        
-        self.stdscr.refresh()
-        
-    def _draw_header(self, height: int, width: int) -> int:
-        """Draw the header section"""
-        lines_used = 0
-        
-        # Draw title
-        if self.config.title:
-            title = self.config.title[:width-2]
-            x = (width - len(title)) // 2
-            self.stdscr.addstr(lines_used, x, title, curses.A_BOLD)
-            lines_used += 1
-            
-        # Draw subtitle
-        if self.config.subtitle:
-            subtitle = self.config.subtitle[:width-2]
-            x = (width - len(subtitle)) // 2
-            self.stdscr.addstr(lines_used, x, subtitle)
-            lines_used += 1
-            
-        # Draw separator
-        if lines_used > 0:
-            self.stdscr.addstr(lines_used, 0, "─" * width)
-            lines_used += 1
-            
-        return lines_used
-        
-    def _draw_menu(self, start_y: int, width: int) -> int:
-        """Draw the menu section"""
-        if not self.menu_items:
-            return 0
-            
-        # Build menu string
-        menu_parts = []
-        for item in self.menu_items:
-            if item.enabled:
-                menu_parts.append(f"[{item.key}] {item.label}")
-            else:
-                menu_parts.append(f"[{item.key}] {item.label} (disabled)")
-                
-        menu_str = "  ".join(menu_parts)
-        
-        # Calculate position based on alignment
-        if self.config.menu_alignment == MenuAlignment.CENTER:
-            x = (width - len(menu_str)) // 2
-        elif self.config.menu_alignment == MenuAlignment.RIGHT:
-            x = width - len(menu_str) - 2
-        else:
-            x = 2
-            
-        # Draw menu
-        self.stdscr.addstr(start_y, max(0, x), menu_str[:width])
-        
-        # Draw separator
-        self.stdscr.addstr(start_y + 1, 0, "─" * width)
-        
-        return 2
-        
-    def _draw_content(self, start_y: int, height: int, width: int) -> None:
-        """Draw the content area"""
-        # Create a subwindow for content
-        content_win = self.stdscr.subwin(height, width, start_y, 0)
-        
-        # Let the panel draw itself
-        if self.current_panel and self.current_panel.needs_refresh():
-            self.current_panel.draw(content_win, height, width)
-            self.current_panel._needs_refresh = False
-            
-    def _draw_status(self, y: int, width: int) -> None:
-        """Draw the status bar"""
-        # Draw separator
-        self.stdscr.addstr(y - 1, 0, "─" * width)
-        
-        # Show temporary status or help
-        if self._status_message and time.time() < self._status_time:
-            status = self._status_message
-        elif self.config.show_help:
-            status = "Press 'q' to quit | Use arrow keys to navigate"
-        else:
-            status = ""
-            
-        if status:
-            self.stdscr.addstr(y, 2, status[:width-4])
-            
+            # Sleep is handled by get_input timeout
+    
     def _handle_input(self, key: int) -> None:
-        """Handle keyboard input"""
-        # Global keys
-        if key == ord('q') or key == ord('Q'):
-            self.running = False
-            return
-            
-        # Check menu items
-        for item in self.menu_items:
-            if item.enabled and item.action and key == ord(item.key):
-                result = item.action()
-                if result == 'quit':
-                    self.running = False
+        """Handle keyboard input with priority system."""
+        # Convert to character if possible
+        try:
+            key_char = chr(key).lower()
+        except (ValueError, OverflowError):
+            key_char = None
+        
+        # 1. Try application frame (handles global keys like 'q' and menu)
+        if key_char:
+            result = self.app_frame.handle_key(key_char)
+            if result == 'quit':
+                self.running = False
                 return
-                
-        # Pass to current panel
+        
+        # 2. Try current panel
         if self.current_panel:
             result = self.current_panel.handle_input(key)
             if result == 'quit':
                 self.running = False
             elif result == 'back':
-                # Handle navigation
-                pass
+                self._handle_back_navigation()
+    
+    def _handle_back_navigation(self) -> None:
+        """Handle back navigation - can be overridden."""
+        # Default: just clear the current panel
+        self.set_panel(None)
+    
+    def get_performance_stats(self) -> dict:
+        """Get rendering performance statistics."""
+        if self._render_engine:
+            return self._render_engine.get_performance_stats()
+        return {}
+
+
+# Configuration class for backward compatibility with CLI
+class LayoutConfig:
+    """Configuration for framework layout."""
+    
+    def __init__(self, title: str = "HYPER INTERFACE", subtitle: str = "", 
+                 show_borders: bool = True, show_help: bool = True, theme=None):
+        self.title = title
+        self.subtitle = subtitle
+        self.show_borders = show_borders
+        self.show_help = show_help
+        self.theme = theme
+
+
+# Menu item for CLI compatibility
+class MenuItem:
+    """Menu item configuration."""
+    
+    def __init__(self, key: str, label: str, description: str, 
+                 action: Optional[Callable] = None, enabled: bool = True):
+        self.key = key
+        self.label = label
+        self.description = description
+        self.action = action
+        self.enabled = enabled

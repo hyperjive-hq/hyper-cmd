@@ -94,8 +94,13 @@ class SimpleContainer:
             return instance
         
         # Service not found
+        service_name = getattr(service_type, '__name__', str(service_type))
+        available_services = list(self._services.keys()) + list(self._factories.keys())
+        available_names = [getattr(svc, '__name__', str(svc)) for svc in available_services]
+        
         raise ValueError(
-            f"Service '{service_type.__name__}' not registered. "
+            f"Service '{service_name}' not registered. "
+            f"Available services: {available_names}. "
             f"Use register() or register_factory() to add it first."
         )
     

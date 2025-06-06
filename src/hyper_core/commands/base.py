@@ -70,10 +70,8 @@ class BaseCommand(ABC, ICommand):
     def _generate_default_name(self) -> str:
         """Generate a default command name from the class name."""
         class_name = self.__class__.__name__
-        # Remove 'Command' suffix if present
         if class_name.endswith('Command'):
             class_name = class_name[:-7]
-        # Convert to lowercase with hyphens
         return class_name.lower().replace('_', '-')
     
     @abstractmethod
@@ -143,6 +141,20 @@ class BaseCommand(ABC, ICommand):
         
         with Progress(*columns, console=self.console) as progress:
             task_id = progress.add_task(description, total=total)
+            yield progress, task_id
+    
+    @contextmanager
+    def progress_context(self, description: str, total: Optional[int] = None):
+        """Context manager for progress indicators (alias for show_progress).
+        
+        Args:
+            description: Text to display next to the progress indicator
+            total: Total number of steps (for progress bar) or None (for spinner)
+            
+        Yields:
+            Tuple of (progress, task_id) for updating progress
+        """
+        with self.show_progress(description, total) as (progress, task_id):
             yield progress, task_id
     
     def print_success(self, message: str) -> None:
@@ -223,6 +235,32 @@ class BaseCommand(ABC, ICommand):
         except Exception as e:
             self.print_error(f"Failed to create directory {path}: {e}")
             return False
+    
+    def validate_path(self, path: Path, must_exist: bool = False, must_be_dir: bool = False, must_be_file: bool = False) -> bool:
+        """Validate a path according to specified criteria.
+        
+        Args:
+            path: Path to validate
+            must_exist: If True, path must exist
+            must_be_dir: If True, path must be a directory
+            must_be_file: If True, path must be a file
+            
+        Returns:
+            True if path is valid according to criteria, False otherwise
+        """
+        if must_exist and not path.exists():
+            self.print_error(f"Path does not exist: {path}")
+            return False
+        
+        if must_be_dir and path.exists() and not path.is_dir():
+            self.print_error(f"Path is not a directory: {path}")
+            return False
+            
+        if must_be_file and path.exists() and not path.is_file():
+            self.print_error(f"Path is not a file: {path}")
+            return False
+            
+        return True
     
     # ICommand Protocol Implementation
     

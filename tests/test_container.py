@@ -427,17 +427,22 @@ class TestContainerIntegration:
 
     def test_container_factory_functions(self):
         """Test using container factory functions."""
+        from dependency_injector.containers import DynamicContainer
 
         # Test the create_container factory
         container = create_container()
-        assert isinstance(container, SimpleContainer)
+        # create_container returns a dependency-injector DynamicContainer instance
+        assert isinstance(container, DynamicContainer)
 
-        # Test that it has basic services
+        # Test that it can be configured
         console = Console()
-        container.register(Console, console)
-
-        retrieved = container.get(Console)
-        assert retrieved is console
+        from hyper_core.container import configure_container
+        configure_container(container, console=console)
+        
+        # Verify console was configured by accessing the provided instance
+        assert hasattr(container, 'console')
+        provided_console = container.console()
+        assert provided_console is console
 
     def test_configuration_driven_container(self):
         """Test configuration-driven container setup."""

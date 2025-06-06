@@ -135,6 +135,10 @@ class TestCommandFramework:
         """Test command error handling and exit codes."""
         container = SimpleContainer()
         container.register(Console, Console())
+        
+        # Register mock user service
+        mock_user_service = Mock()
+        container.register("user_service", mock_user_service)
 
         cmd = UserManagementCommand(container)
 
@@ -153,8 +157,8 @@ class TestCommandFramework:
         container.register(Console, Console())
 
         # Register commands
-        registry.register("migrate", DatabaseMigrationCommand)
-        registry.register("user", UserManagementCommand)
+        registry.register(DatabaseMigrationCommand, "migrate")
+        registry.register(UserManagementCommand, "user")
 
         # Test command discovery
         commands = registry.list_commands()
