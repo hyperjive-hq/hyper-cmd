@@ -136,8 +136,8 @@ graph TB
     
     subgraph "Command Lifecycle"
         Init[Initialize with Container]
-        Run[run() - Error Handling]
-        Exec[execute() - Core Logic]
+        Run["run() - Error Handling"]
+        Exec["execute() - Core Logic"]
         Exit[Return Exit Code]
     end
     
