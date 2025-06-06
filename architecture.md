@@ -300,11 +300,11 @@ sequenceDiagram
         PL->>PL: extract_metadata()
         PL-->>PR: plugin_info
         PR->>PI: create instance
-        PI->>PI: register components
-        PI-->>PR: component_registry
+        PI->>PI: "register components"
+        PI-->>PR: "component_registry"
     end
     
-    PR-->>App: loaded_plugins[]
+    PR-->>App: "loaded_plugins[]"
 ```
 
 ### Command Execution Flow
