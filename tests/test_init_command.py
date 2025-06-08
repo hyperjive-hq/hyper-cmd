@@ -69,7 +69,7 @@ class TestInitCommand:
         hyper_dir.mkdir()
 
         with mock.patch("pathlib.Path.cwd", return_value=tmp_path):
-            with mock.patch("builtins.input", return_value="n"):  # User says no
+            with mock.patch.object(self.init_command, "prompt_confirm", return_value=False):
                 exit_code = self.init_command.execute(force=False)
 
                 assert exit_code == 1  # Should exit with error
@@ -81,8 +81,11 @@ class TestInitCommand:
         hyper_dir.mkdir()
 
         with mock.patch("pathlib.Path.cwd", return_value=tmp_path):
-            # Mock user input: yes to overwrite, yes to proceed
-            with mock.patch("builtins.input", side_effect=["y", "y"]):
+            with mock.patch.object(
+                self.init_command,
+                "prompt_confirm",
+                side_effect=[True, True],
+            ):
                 exit_code = self.init_command.execute(force=False)
 
                 assert exit_code == 0

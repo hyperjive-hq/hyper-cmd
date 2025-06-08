@@ -176,7 +176,7 @@ class PluginRegistry:
             plugin_name: Name of the plugin to load.
             reload: If ``True`` and the plugin is already loaded, unload and
                 reload it. When ``False`` the method simply returns ``True`` if
-                the plugin is already present.
+                the plugin is already present. Defaults to ``False``.
         """
         try:
             if plugin_name in self._plugins:
