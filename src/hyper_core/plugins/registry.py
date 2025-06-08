@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Type, Union
 
+from ..config import get_config
 from ..protocols import ICommand, IPage, IService, IWidget
 
 logger = logging.getLogger(__name__)
@@ -99,8 +100,25 @@ class PluginRegistry:
             logger.warning("Plugin registry already initialized")
             return
         
+        # Add .hyper/plugins directory if it exists
+        config = get_config()
+        if config.has_hyper_directory():
+            hyper_plugins = config.get_plugins_directory()
+            if hyper_plugins:
+                self.add_plugin_path(hyper_plugins)
+        
+        # Add any additional plugin paths
         if plugin_paths:
             for path in plugin_paths:
+                self.add_plugin_path(path)
+        
+        # Add default paths if no .hyper directory found
+        if not config.has_hyper_directory():
+            default_paths = [
+                Path.cwd() / "plugins",
+                Path.home() / ".hyper" / "plugins"
+            ]
+            for path in default_paths:
                 self.add_plugin_path(path)
         
         self._initialized = True

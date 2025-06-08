@@ -31,6 +31,7 @@ from .plugins import (
 from .commands import (
     BaseCommand,
     CommandRegistry,
+    InitCommand,
 )
 
 # UI framework
@@ -54,6 +55,14 @@ from .container import (
     BaseHyperContainer,
     create_container,
     configure_container,
+)
+
+# Configuration system
+from .config import (
+    HyperConfig,
+    get_config,
+    reset_config,
+    find_hyper_directory,
 )
 
 __all__ = [
@@ -80,6 +89,7 @@ __all__ = [
     # Commands
     "BaseCommand",
     "CommandRegistry",
+    "InitCommand",
     
     # UI Framework
     "NCursesFramework",
@@ -99,4 +109,10 @@ __all__ = [
     "BaseHyperContainer",
     "create_container",
     "configure_container",
+    
+    # Configuration
+    "HyperConfig",
+    "get_config",
+    "reset_config",
+    "find_hyper_directory",
 ]

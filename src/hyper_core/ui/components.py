@@ -236,13 +236,14 @@ class StatusBar(UIComponent):
 
 
 class MenuBar(UIComponent):
-    """Horizontal menu bar with clickable items."""
+    """Horizontal menu bar with clickable items and arrow key navigation."""
     
     def __init__(self, alignment: MenuAlignment = MenuAlignment.CENTER):
         super().__init__()
         self._items: List[Tuple[str, str, Optional[Callable]]] = []  # (key, label, action)
         self._alignment = alignment.value if isinstance(alignment, MenuAlignment) else alignment
         self._separator = "  "
+        self._selected_index = 0  # Currently selected menu item
     
     def add_item(self, key: str, label: str, action: Optional[Callable] = None) -> None:
         """Add a menu item."""
@@ -261,6 +262,44 @@ class MenuBar(UIComponent):
                 return action()
         return None
     
+    def handle_arrow_key(self, key_code: int) -> Optional[Any]:
+        """Handle arrow key navigation and return action result if any."""
+        import curses
+        
+        if not self._items:
+            return None
+        
+        enabled_items = [(i, key, label, action) for i, (key, label, action) in enumerate(self._items) if action]
+        if not enabled_items:
+            return None
+        
+        if key_code == curses.KEY_LEFT:
+            # Move to previous menu item and activate it immediately
+            self._selected_index = (self._selected_index - 1) % len(enabled_items)
+            self.mark_dirty()
+            if enabled_items and 0 <= self._selected_index < len(enabled_items):
+                _, _, _, action = enabled_items[self._selected_index]
+                if action:
+                    action()  # Call action immediately, don't return result
+            return None
+        elif key_code == curses.KEY_RIGHT:
+            # Move to next menu item and activate it immediately
+            self._selected_index = (self._selected_index + 1) % len(enabled_items)
+            self.mark_dirty()
+            if enabled_items and 0 <= self._selected_index < len(enabled_items):
+                _, _, _, action = enabled_items[self._selected_index]
+                if action:
+                    action()  # Call action immediately, don't return result
+            return None
+        elif key_code == ord('\n') or key_code == ord('\r'):  # Enter key
+            # Activate currently selected menu item (alternative to arrow keys)
+            if enabled_items and 0 <= self._selected_index < len(enabled_items):
+                _, _, _, action = enabled_items[self._selected_index]
+                if action:
+                    action()  # Call action but don't return result (consistent with arrow keys)
+            return None
+        return None
+    
     def get_size_hint(self) -> Tuple[int, int]:
         """Calculate size hint for menu bar."""
         if not self._items:
@@ -275,18 +314,27 @@ class MenuBar(UIComponent):
         return (total_width, 1)
     
     def render_content(self, ctx: RenderContext) -> None:
-        """Render menu bar."""
+        """Render menu bar with selection highlighting."""
         if not self._items:
             return
         
-        # Build menu string
+        # Build menu string with selection highlighting
         menu_parts = []
-        for key, label, action in self._items:
-            if action:  # Only show enabled items
-                menu_parts.append(f"[{key}] {label}")
+        enabled_items = [(i, key, label, action) for i, (key, label, action) in enumerate(self._items) if action]
         
-        if not menu_parts:
+        if not enabled_items:
             return
+        
+        # Adjust selected index if necessary
+        if self._selected_index >= len(enabled_items):
+            self._selected_index = 0
+        
+        for j, (i, key, label, action) in enumerate(enabled_items):
+            if j == self._selected_index:
+                # Highlight selected item
+                menu_parts.append(f">[{key}] {label}<")
+            else:
+                menu_parts.append(f"[{key}] {label}")
         
         menu_str = self._separator.join(menu_parts)
         
@@ -352,6 +400,15 @@ class ApplicationFrame(FlexContainer):
         # Handle global keys
         if key.lower() == 'q':
             return 'quit'
+        
+        return None
+    
+    def handle_arrow_key(self, key_code: int) -> Optional[Any]:
+        """Handle arrow key input and return action result."""
+        # Pass arrow keys to menu bar for navigation
+        result = self.menu_bar.handle_arrow_key(key_code)
+        if result is not None:
+            return result
         
         return None
     

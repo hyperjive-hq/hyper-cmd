@@ -6,6 +6,7 @@ import click
 from rich.console import Console
 
 from .commands.registry import CommandRegistry
+from .commands.init import InitCommand
 from .plugins.loader import PluginLoader
 from .container.simple_container import SimpleContainer
 
@@ -13,6 +14,9 @@ from .container.simple_container import SimpleContainer
 def discover_commands() -> CommandRegistry:
     """Discover and register available commands."""
     registry = CommandRegistry()
+    
+    # Register built-in commands first
+    registry.register(InitCommand, "init")
     
     # Load plugins which may register commands
     plugin_loader = PluginLoader()
@@ -58,6 +62,18 @@ def main(ctx: click.Context, ui: bool) -> None:
             
             console.print("\nUse 'hyper --ui' to launch the UI interface.")
             console.print("Use 'hyper <command>' to run a specific command.")
+            console.print("Use 'hyper init' to initialize a new project.")
+
+
+@main.command()
+@click.option('--force', is_flag=True, help='Skip confirmation and overwrite existing files')
+@click.pass_context
+def init(ctx: click.Context, force: bool) -> None:
+    """Initialize a new Hyper project in the current directory."""
+    container = SimpleContainer()
+    init_command = InitCommand(container)
+    exit_code = init_command.execute(force=force)
+    sys.exit(exit_code)
 
 
 def launch_ui() -> None:
@@ -85,11 +101,9 @@ def launch_ui() -> None:
             action=lambda: show_plugins_panel(framework)
         )
         
-        framework.add_menu_item(
-            key='q',
-            label='Quit',
-            action=lambda: 'quit'
-        )
+        
+        # Show the first panel (Commands) by default
+        show_commands_panel(framework)
         
         framework.run()
         
@@ -191,6 +205,10 @@ def register_dynamic_commands():
     container = SimpleContainer()
     
     for cmd_name in registry.list_commands():
+        # Skip commands that are already registered as click commands
+        if cmd_name == "init":
+            continue
+            
         cmd_class = registry.get(cmd_name)
         if cmd_class:
             @click.command(name=cmd_name)

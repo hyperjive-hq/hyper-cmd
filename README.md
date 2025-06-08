@@ -18,51 +18,90 @@ pip install hyper-core
 
 ## Quick Start
 
-### Creating a Simple Plugin
+### Initialize a New Project
+
+Start by creating a new Hyper project in your directory:
+
+```bash
+hyper init
+```
+
+This creates a `.hyper` directory with:
+- `config.yaml` - Project configuration file
+- `plugins/` - Directory for your custom plugins
+- `plugins/hello_world/` - Example plugin with full documentation
+- `.gitignore` - Git ignore patterns for Hyper files
+
+### Try the Example Plugin
+
+Test the framework with the included example:
+
+```bash
+hyper hello --name "Your Name" --style fancy
+```
+
+### Project Configuration
+
+The `.hyper/config.yaml` file controls project settings:
+
+```yaml
+# Plugin configuration
+plugins:
+  enabled: true
+  auto_discover: true
+  # bundle_paths:
+  #   - '../shared-plugins'
+
+# UI configuration
+ui:
+  theme: 'default'
+  refresh_interval: 1000
+
+# Logging configuration  
+logging:
+  level: 'INFO'
+  # file: 'hyper.log'
+```
+
+### Creating Your Own Plugin
+
+1. **Copy the example plugin as a template:**
+   ```bash
+   cp -r .hyper/plugins/hello_world .hyper/plugins/my_plugin
+   ```
+
+2. **Modify the plugin files:**
+   - Edit `plugin.py` with your command logic
+   - Update `plugin.yaml` with your metadata
+   - Customize the `__init__.py` if needed
+
+3. **Test your plugin:**
+   ```bash
+   hyper <your-command>
+   ```
+
+### Plugin Structure
 
 ```python
-# my_plugin/plugin.py
+# .hyper/plugins/my_plugin/plugin.py
 from hyper_core.commands import BaseCommand
-from hyper_core.protocols import ICommand
 
 PLUGIN_NAME = "my_plugin"
 PLUGIN_VERSION = "1.0.0"
 PLUGIN_DESCRIPTION = "My awesome plugin"
 
-class HelloCommand(BaseCommand):
-    """Say hello!"""
-    
+class MyCommand(BaseCommand):
     @property
     def name(self) -> str:
-        return "hello"
+        return "my-command"
     
     @property
     def description(self) -> str:
-        return "Say hello to the world"
+        return "Description of my command"
     
     def execute(self) -> int:
         self.console.print("Hello from my plugin!")
         return 0
-```
-
-### Using the Plugin System
-
-```python
-from hyper_core.plugins import plugin_registry
-
-# Initialize the registry
-plugin_registry.initialize(["/path/to/plugins"])
-
-# Discover and load plugins
-discovered = plugin_registry.discover_plugins()
-for plugin_name in discovered:
-    plugin_registry.load_plugin(plugin_name)
-
-# Use loaded commands
-cmd_class = plugin_registry.get_command("hello")
-if cmd_class:
-    cmd = cmd_class(container)
-    cmd.run()
 ```
 
 ### Creating a Widget

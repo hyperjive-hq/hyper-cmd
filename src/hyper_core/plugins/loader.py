@@ -37,6 +37,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 
+from ..config import get_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -164,10 +166,27 @@ class PluginLoader:
     def __init__(self):
         """Initialize the plugin loader."""
         self._loaded_plugins = []
-        self._search_paths = [
+        self._search_paths = self._get_default_search_paths()
+    
+    def _get_default_search_paths(self) -> List[Path]:
+        """Get default plugin search paths including .hyper directory."""
+        paths = []
+        
+        # Get .hyper/plugins if it exists
+        config = get_config()
+        if config.has_hyper_directory():
+            hyper_plugins = config.get_plugins_directory()
+            if hyper_plugins:
+                paths.append(hyper_plugins)
+                logger.debug(f"Added .hyper/plugins search path: {hyper_plugins}")
+        
+        # Add traditional search paths
+        paths.extend([
             Path.cwd() / "plugins",  # ./plugins
-            Path.home() / ".hyper" / "plugins",  # ~/.hyper/plugins
-        ]
+            Path.home() / ".hyper" / "plugins",  # ~/.hyper/plugins (global)
+        ])
+        
+        return paths
     
     def add_search_path(self, path: str) -> None:
         """Add a directory to search for plugins."""

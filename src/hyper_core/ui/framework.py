@@ -73,7 +73,7 @@ class NCursesFramework:
     
     def _setup_defaults(self) -> None:
         """Setup default menu items and behaviors."""
-        self.add_menu_item('q', 'Quit', self._quit_action)
+        # No default menu items - let applications add their own
     
     def _quit_action(self) -> str:
         """Default quit action."""
@@ -135,20 +135,29 @@ class NCursesFramework:
     
     def _handle_input(self, key: int) -> None:
         """Handle keyboard input with priority system."""
+        import curses
+        
         # Convert to character if possible
         try:
             key_char = chr(key).lower()
         except (ValueError, OverflowError):
             key_char = None
         
-        # 1. Try application frame (handles global keys like 'q' and menu)
+        # 1. Check for arrow keys and special keys first
+        if key in (curses.KEY_LEFT, curses.KEY_RIGHT, ord('\n'), ord('\r')):
+            result = self.app_frame.handle_arrow_key(key)
+            if result == 'quit':
+                self.running = False
+                return
+        
+        # 2. Try application frame (handles global keys like 'q' and menu)
         if key_char:
             result = self.app_frame.handle_key(key_char)
             if result == 'quit':
                 self.running = False
                 return
         
-        # 2. Try current panel
+        # 3. Try current panel
         if self.current_panel:
             result = self.current_panel.handle_input(key)
             if result == 'quit':
