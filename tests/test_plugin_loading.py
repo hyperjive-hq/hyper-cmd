@@ -110,7 +110,7 @@ class {plugin_name.title().replace("_", "")}Command(BaseCommand):
 
             # Should only have the .hyper/plugins directory
             assert len(search_paths) == 1
-            assert search_paths[0] == plugins_dir
+            assert search_paths[0].resolve() == plugins_dir.resolve()
 
             # Test PluginRegistry
             registry = PluginRegistry()
@@ -158,14 +158,14 @@ class {plugin_name.title().replace("_", "")}Command(BaseCommand):
             # Should find inner .hyper directory first
             config = HyperConfig()
             assert config.has_hyper_directory()
-            assert config.get_hyper_directory() == inner_hyper.parent
+            assert config.get_hyper_directory().resolve() == inner_hyper.parent.resolve()
 
             # Plugin loader should only use inner directory
             loader = PluginLoader()
             search_paths = loader._get_default_search_paths()
 
             assert len(search_paths) == 1
-            assert search_paths[0] == inner_hyper
+            assert search_paths[0].resolve() == inner_hyper.resolve()
 
             # Registry should only load from inner directory
             registry = PluginRegistry()
@@ -247,9 +247,9 @@ class {plugin_name.title().replace("_", "")}Command(BaseCommand):
 
             # Should have default paths
             assert len(search_paths) == 2
-            path_strings = [str(p) for p in search_paths]
-            assert str(project_root / "plugins") in path_strings
-            assert str(Path.home() / ".hyper" / "plugins") in path_strings
+            path_strings = [str(p.resolve()) for p in search_paths]
+            assert str((project_root / "plugins").resolve()) in path_strings
+            assert str((Path.home() / ".hyper" / "plugins").resolve()) in path_strings
 
             # Test PluginRegistry fallback
             registry = PluginRegistry()
