@@ -251,6 +251,7 @@ class PluginLoader:
         try:
             # Create module spec with proper namespacing
             module_name = f"hyper_plugins.{plugin_name}"
+            importlib.invalidate_caches()
             spec = importlib.util.spec_from_file_location(module_name, plugin_file)
 
             if not spec or not spec.loader:
@@ -292,8 +293,7 @@ class PluginLoader:
     def _register_module(self, plugin_name: str, module: Any) -> None:
         """Register the plugin module in sys.modules."""
         module_name = f"hyper_plugins.{plugin_name}"
-        if module_name not in sys.modules:
-            sys.modules[module_name] = module
+        sys.modules[module_name] = module
 
     @staticmethod
     def load_plugin_module(plugin_path: Path, plugin_name: str) -> Optional[Any]:

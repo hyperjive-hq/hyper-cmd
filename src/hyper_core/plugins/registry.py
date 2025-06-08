@@ -170,11 +170,25 @@ class PluginRegistry:
         return discovered
 
     def load_plugin(self, plugin_name: str, reload: bool = False) -> bool:
-        """Load a plugin by name."""
+        """Load a plugin by name.
+
+        Args:
+            plugin_name: Name of the plugin to load.
+            reload: If ``True`` and the plugin is already loaded, unload and
+                reload it. When ``False`` the method simply returns ``True`` if
+                the plugin is already present.
+        """
         try:
-            # If plugin already exists, unload it first to ensure replacement
             if plugin_name in self._plugins:
-                logger.info(f"Plugin '{plugin_name}' already loaded, unloading for replacement")
+                if not reload:
+                    logger.info(
+                        f"Plugin '{plugin_name}' already loaded; skipping reload"
+                    )
+                    return True
+
+                logger.info(
+                    f"Plugin '{plugin_name}' already loaded, unloading for replacement"
+                )
                 self.unload_plugin(plugin_name)
 
             # Trigger lifecycle hook
