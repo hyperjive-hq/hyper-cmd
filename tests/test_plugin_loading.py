@@ -396,9 +396,7 @@ class {plugin_name.title().replace("_", "")}Command(BaseCommand):
 
             # Modify plugin version
             plugin_file = plugin_dir / "plugin.py"
-            plugin_file.write_text(
-                plugin_file.read_text().replace("1.0.0", "2.0.0")
-            )
+            plugin_file.write_text(plugin_file.read_text().replace("1.0.0", "2.0.0"))
             new_time = os.path.getmtime(plugin_file) + 2
             os.utime(plugin_file, (new_time, new_time))
 

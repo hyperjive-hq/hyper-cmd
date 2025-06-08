@@ -181,14 +181,10 @@ class PluginRegistry:
         try:
             if plugin_name in self._plugins:
                 if not reload:
-                    logger.info(
-                        f"Plugin '{plugin_name}' already loaded; skipping reload"
-                    )
+                    logger.info(f"Plugin '{plugin_name}' already loaded; skipping reload")
                     return True
 
-                logger.info(
-                    f"Plugin '{plugin_name}' already loaded, unloading for replacement"
-                )
+                logger.info(f"Plugin '{plugin_name}' already loaded, unloading for replacement")
                 self.unload_plugin(plugin_name)
 
             # Trigger lifecycle hook
