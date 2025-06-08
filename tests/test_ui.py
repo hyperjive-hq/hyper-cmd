@@ -229,12 +229,12 @@ class TestBaseWidget:
     def test_widget_input_handling(self):
         """Test widget input handling capabilities."""
         widget = CPUUsageWidget()
-        
+
         # Test that widget has input handling method
-        assert hasattr(widget, 'handle_input')
-        
+        assert hasattr(widget, "handle_input")
+
         # Test default input handling (should return False - not handled)
-        result = widget.handle_input(ord('a'))
+        result = widget.handle_input(ord("a"))
         assert result is False
 
 
@@ -342,6 +342,7 @@ class TestThemeSystem:
 
         # Test switching themes
         from hyper_core.ui.renderer import MockBackend
+
         mock_backend = MockBackend()
         manager.set_theme("custom", mock_backend)
         current_theme = manager.get_current_theme()
@@ -355,11 +356,11 @@ class TestUIFramework:
     def test_framework_initialization(self):
         """Test UI framework initialization."""
         framework = NCursesFramework()
-        
+
         # Framework should be initialized on creation
         assert framework.app_frame is not None
         assert framework.running is False
-        
+
         # Test that we can set a panel
         panel = ContentPanel("Test Panel")
         framework.set_panel(panel)
@@ -384,11 +385,11 @@ class TestUIFramework:
         panel = ContentPanel("Main Content")
 
         assert panel.title == "Main Content"
-        
+
         # Test input handling
-        result = panel.handle_input(ord('b'))
-        assert result == 'back'
-        
+        result = panel.handle_input(ord("b"))
+        assert result == "back"
+
         # Test size hint
         size_hint = panel.get_size_hint()
         assert isinstance(size_hint, tuple)
@@ -503,17 +504,17 @@ class TestUIIntegration:
 
         # Create content panel
         dashboard = ContentPanel("System Dashboard")
-        
+
         # Verify dashboard setup
         assert dashboard.title == "System Dashboard"
-        
+
         # Test widget refresh cycle individually
         cpu_widget.refresh_data()
         assert cpu_widget._needs_redraw  # Should need redraw after refresh
-        
+
         network_widget.refresh_data()
         assert network_widget._needs_redraw
-        
+
         log_widget.refresh_data()
         assert log_widget._needs_redraw
 
@@ -534,7 +535,7 @@ class TestUIIntegration:
         # Test scrolling interaction
         initial_offset = log_widget.scroll_offset
         log_widget.scroll_down()  # First scroll down to create scrolling opportunity
-        log_widget.scroll_up()    # Then scroll up
+        log_widget.scroll_up()  # Then scroll up
         assert log_widget.scroll_offset != initial_offset or len(log_widget.log_lines) <= 10
 
     @patch("curses.wrapper")

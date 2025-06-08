@@ -436,7 +436,7 @@ class TestThemeCompatibility:
         """Test handling of invalid theme requests."""
         theme_manager = ThemeManager()
 
-        # Try to set non-existent theme  
+        # Try to set non-existent theme
         mock_backend = MockBackend()
         try:
             theme_manager.set_theme("nonexistent", mock_backend)
@@ -492,6 +492,7 @@ class TestThemeCompatibility:
 
         # Test rapid theme switching
         import time
+
         mock_backend = MockBackend()
 
         start_time = time.time()

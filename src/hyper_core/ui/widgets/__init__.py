@@ -2,4 +2,4 @@
 
 from .base import BaseWidget, WidgetSize
 
-__all__ = ['BaseWidget', 'WidgetSize']
+__all__ = ["BaseWidget", "WidgetSize"]

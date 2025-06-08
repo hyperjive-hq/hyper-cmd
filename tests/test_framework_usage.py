@@ -17,7 +17,7 @@ from hyper_core import (
     ThemeManager,
     WidgetSize,
 )
-from hyper_core.ui import ContentPanel, LayoutConfig, MenuAlignment, MenuItem, NCursesFramework
+from hyper_core.ui import ContentPanel, LayoutConfig, MenuItem, NCursesFramework
 
 
 class ExampleWidget(BaseWidget):
@@ -35,10 +35,8 @@ class ExampleWidget(BaseWidget):
                 color_attr = curses.color_pair(self.COLOR_INFO)
             except:
                 color_attr = 0  # Default attribute for testing
-            
-            stdscr.addstr(
-                y + 1, x + 2, f"Value: {self.data_value:.1f}", color_attr
-            )
+
+            stdscr.addstr(y + 1, x + 2, f"Value: {self.data_value:.1f}", color_attr)
 
             # Draw a simple progress bar
             bar_width = width - 6
@@ -85,11 +83,11 @@ class ExampleContentPanel(ContentPanel):
         """Add a widget to the panel."""
         self.widgets.append(widget)
         self.refresh()
-    
+
     def refresh(self):
         """Mark the panel as needing refresh."""
         self._needs_refresh = True
-    
+
     def needs_refresh(self):
         """Check if the panel needs refresh."""
         return self._needs_refresh
@@ -124,7 +122,7 @@ class ExampleContentPanel(ContentPanel):
             help_text = "Use UP/DOWN to select, ENTER to refresh, Q to quit"
             if y_pos + len(self.widgets) + 2 < height:
                 win.addstr(height - 2, 2, help_text)
-            
+
             # Call win.refresh() for the test expectations
             win.refresh()
 
@@ -169,7 +167,7 @@ class ExampleCommand(BaseCommand):
             self.print_info(f"Running example command with count={count}")
 
             for i in range(count):
-                self.console.print(f"{i+1}. {message} from hyper-core!")
+                self.console.print(f"{i + 1}. {message} from hyper-core!")
 
             self.print_success("Example command completed successfully")
             return 0
@@ -294,6 +292,7 @@ class TestRealFrameworkUsage:
 
         # Test theme switching
         from hyper_core.ui.renderer import MockBackend
+
         mock_backend = MockBackend()
         manager.set_theme("custom", mock_backend)
         assert manager.current_theme.name == "custom"
@@ -492,6 +491,7 @@ class TestFrameworkIntegration:
         # Register and apply theme
         theme_manager.register_theme(custom_theme)
         from hyper_core.ui.renderer import MockBackend
+
         mock_backend = MockBackend()
         theme_manager.set_theme("custom", mock_backend)
 

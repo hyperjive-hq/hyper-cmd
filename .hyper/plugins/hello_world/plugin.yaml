@@ -1,0 +1,36 @@
+name: hello_world
+version: 1.0.0
+description: Hello World example plugin demonstrating Hyper Core capabilities
+author: Hyper Core Framework
+
+# Plugin dependencies (Python packages)
+dependencies: []
+
+# Plugin components that will be registered
+entry_points:
+  commands:
+    - HelloCommand
+  widgets:
+    - HelloWidget
+  services:
+    - HelloService
+
+# Plugin configuration schema (optional)
+config_schema:
+  greeting_style:
+    type: string
+    default: simple
+    description: Default greeting style
+  max_count:
+    type: integer
+    default: 10
+    description: Maximum number of greetings allowed
+
+# Plugin metadata
+tags:
+  - example
+  - tutorial
+  - hello-world
+
+# Minimum framework version required
+min_hyper_version: "0.1.0"

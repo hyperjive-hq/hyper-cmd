@@ -1,0 +1,26 @@
+# Hyper Core Project Configuration
+version: '1.0'
+
+# Plugin configuration
+plugins:
+  enabled: true
+  auto_discover: true
+  # Add custom plugin paths here (relative to this config file)
+  # bundle_paths:
+  #   - '../shared-plugins'
+  #   - './custom-plugins'
+
+# UI configuration
+ui:
+  theme: 'default'
+  refresh_interval: 1000
+
+# Logging configuration  
+logging:
+  level: 'INFO'
+  # file: 'hyper.log'  # Uncomment to log to file
+
+# Custom application settings can be added here
+# app:
+#   name: 'My Hyper App'
+#   version: '1.0.0'

@@ -1,0 +1,20 @@
+# Hyper Core generated files
+*.log
+*.cache
+.hyper_cache/
+
+# Plugin development
+plugins/*/venv/
+plugins/*/.env
+plugins/*/__pycache__/
+plugins/*/.pytest_cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
