@@ -33,7 +33,7 @@ class ExampleWidget(BaseWidget):
             # Use the widget's color constants - handle color pair safely for testing
             try:
                 color_attr = curses.color_pair(self.COLOR_INFO)
-            except:
+            except Exception:
                 color_attr = 0  # Default attribute for testing
 
             stdscr.addstr(y + 1, x + 2, f"Value: {self.data_value:.1f}", color_attr)
@@ -48,7 +48,7 @@ class ExampleWidget(BaseWidget):
                 color = self.COLOR_SUCCESS if i < filled else self.COLOR_SECONDARY
                 try:
                     color_attr = curses.color_pair(color)
-                except:
+                except Exception:
                     color_attr = 0  # Default for testing
                 try:
                     stdscr.addstr(bar_y, x + 3 + i, char, color_attr)

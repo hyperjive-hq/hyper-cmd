@@ -1,5 +1,6 @@
 """Theme system tests demonstrating customization and theming."""
 
+import curses
 from unittest.mock import Mock
 
 from hyper_core.ui import BaseWidget, Theme, ThemeColors, ThemeManager, WidgetSize

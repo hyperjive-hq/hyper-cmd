@@ -102,10 +102,9 @@ class PluginDiscovery:
         Returns:
             True if the directory contains a valid plugin structure
         """
-        return (
-            (path / "__init__.py").exists()  # Must be a Python package
-            and (path / "plugin.py").exists()  # Must have main plugin module
-        )
+        return (path / "__init__.py").exists() and (  # Must be a Python package
+            path / "plugin.py"
+        ).exists()  # Must have main plugin module
 
     @staticmethod
     def discover_from_path(path: Path) -> list[tuple[str, Path]]:

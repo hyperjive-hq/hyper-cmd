@@ -27,7 +27,7 @@ class CommandRegistry:
             try:
                 instance = command_class(None)
                 cmd_name = instance.name
-            except:
+            except Exception:
                 cmd_name = command_class.__name__.lower().replace("command", "")
 
         self._commands[cmd_name] = command_class
