@@ -1,7 +1,9 @@
 """CLI module for the hyper command."""
 
 import inspect
+import os
 import sys
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -35,15 +37,325 @@ def discover_commands() -> CommandRegistry:
     return registry
 
 
+def install_shell_completion() -> None:
+    """Install shell completion for the hyper command."""
+    console = Console()
+
+    # Detect shell
+    shell = os.environ.get("SHELL", "").split("/")[-1]
+
+    if shell == "zsh":
+        install_zsh_completion()
+    elif shell == "bash":
+        install_bash_completion()
+    elif shell == "fish":
+        install_fish_completion()
+    else:
+        console.print(f"[yellow]Warning:[/yellow] Unsupported shell '{shell}'")
+        console.print("Supported shells: zsh, bash, fish")
+        console.print("You can manually install completion by running:")
+        console.print("  hyper --show-completion")
+
+
+def show_shell_completion() -> None:
+    """Show the shell completion script."""
+    shell = os.environ.get("SHELL", "").split("/")[-1]
+
+    if shell == "zsh":
+        print(get_zsh_completion_script())
+    elif shell == "bash":
+        print(get_bash_completion_script())
+    elif shell == "fish":
+        print(get_fish_completion_script())
+    else:
+        print("# Unsupported shell")
+
+
+def install_zsh_completion() -> None:
+    """Install Zsh completion."""
+    console = Console()
+
+    # Try user directories first, then system directories
+    completion_dirs = [
+        Path.home() / ".zsh" / "completions",
+        Path.home() / ".local" / "share" / "zsh" / "site-functions",
+    ]
+
+    # Check system directories if they're writable
+    system_dirs = [
+        Path("/usr/local/share/zsh/site-functions"),
+        Path("/opt/homebrew/share/zsh/site-functions"),  # macOS with Homebrew
+    ]
+
+    for dir_path in system_dirs:
+        if dir_path.exists() and os.access(dir_path, os.W_OK):
+            completion_dirs.append(dir_path)
+
+    # Find or create completion directory
+    completion_dir = None
+    for dir_path in completion_dirs:
+        if dir_path.exists() and os.access(dir_path, os.W_OK):
+            completion_dir = dir_path
+            break
+        elif not dir_path.exists():
+            try:
+                dir_path.mkdir(parents=True, exist_ok=True)
+                completion_dir = dir_path
+                break
+            except (PermissionError, OSError):
+                continue
+
+    if not completion_dir:
+        # Fallback to user directory
+        completion_dir = Path.home() / ".zsh" / "completions"
+        completion_dir.mkdir(parents=True, exist_ok=True)
+
+    completion_file = completion_dir / "_hyper"
+    completion_file.write_text(get_zsh_completion_script())
+
+    console.print(f"[green]✓[/green] Zsh completion installed to {completion_file}")
+
+    # Check if fpath is already configured
+    zshrc_path = Path.home() / ".zshrc"
+    needs_fpath_config = True
+
+    if zshrc_path.exists():
+        zshrc_content = zshrc_path.read_text()
+        if str(completion_dir) in zshrc_content or "fpath=" in zshrc_content:
+            needs_fpath_config = False
+
+    if needs_fpath_config:
+        console.print("\n[yellow]Setup required:[/yellow] Add this to your ~/.zshrc:")
+        console.print(f"  fpath=({completion_dir} $fpath)")
+        console.print("  autoload -Uz compinit && compinit")
+        console.print("\n[bold]To activate completion:[/bold]")
+        console.print("  1. Restart your shell, OR")
+        console.print("  2. Run: [cyan]source ~/.zshrc[/cyan]")
+        console.print("\n[dim]Then try: hyper <TAB> to see commands[/dim]")
+    else:
+        console.print("\n[bold]To activate completion:[/bold]")
+        console.print("  1. Restart your shell, OR")
+        console.print("  2. Run: [cyan]compinit && rehash[/cyan]")
+        console.print("\n[dim]Then try: hyper <TAB> to see commands[/dim]")
+
+
+def install_bash_completion() -> None:
+    """Install Bash completion."""
+    console = Console()
+
+    # Try user directories first, then system directories
+    completion_dirs = [
+        Path.home() / ".local" / "share" / "bash-completion" / "completions",
+    ]
+
+    # Check system directories if they're writable
+    system_dirs = [
+        Path("/usr/local/etc/bash_completion.d"),
+        Path("/etc/bash_completion.d"),
+    ]
+
+    for dir_path in system_dirs:
+        if dir_path.exists() and os.access(dir_path, os.W_OK):
+            completion_dirs.append(dir_path)
+
+    # Find or create completion directory
+    completion_dir = None
+    for dir_path in completion_dirs:
+        if dir_path.exists() and os.access(dir_path, os.W_OK):
+            completion_dir = dir_path
+            break
+        elif not dir_path.exists():
+            try:
+                dir_path.mkdir(parents=True, exist_ok=True)
+                completion_dir = dir_path
+                break
+            except (PermissionError, OSError):
+                continue
+
+    if not completion_dir:
+        # Fallback to user directory
+        completion_dir = Path.home() / ".local" / "share" / "bash-completion" / "completions"
+        completion_dir.mkdir(parents=True, exist_ok=True)
+
+    completion_file = completion_dir / "hyper"
+    completion_file.write_text(get_bash_completion_script())
+
+    console.print(f"[green]✓[/green] Bash completion installed to {completion_file}")
+    console.print("\n[bold]To activate completion:[/bold]")
+    console.print("  1. Restart your shell, OR")
+    console.print("  2. Run: [cyan]source ~/.bashrc[/cyan]")
+    console.print("\n[dim]Then try: hyper <TAB> to see commands[/dim]")
+
+
+def install_fish_completion() -> None:
+    """Install Fish completion."""
+    console = Console()
+
+    completion_dir = Path.home() / ".config" / "fish" / "completions"
+    completion_dir.mkdir(parents=True, exist_ok=True)
+
+    completion_file = completion_dir / "hyper.fish"
+    completion_file.write_text(get_fish_completion_script())
+
+    console.print(f"[green]✓[/green] Fish completion installed to {completion_file}")
+    console.print("\n[bold]Completion activated automatically in Fish![/bold]")
+    console.print("[dim]Try: hyper <TAB> to see commands[/dim]")
+
+
+def get_zsh_completion_script() -> str:
+    """Generate Zsh completion script."""
+    return '''#compdef hyper
+
+_hyper() {
+    local context state line
+    
+    _arguments -C \
+        '--ui[Launch the UI interface]' \
+        '--install-completion[Install shell completion]' \
+        '--show-completion[Show shell completion script]' \
+        '--help[Show help message]' \
+        '1: :_hyper_commands' \
+        '*::arg:->args'
+    
+    case $state in
+        args)
+            case $line[1] in
+                init)
+                    _arguments \
+                        '--force[Skip confirmation and overwrite existing files]' \
+                        '--help[Show help message]'
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_hyper_commands() {
+    local commands
+    commands=(
+        'init:Initialize a new Hyper project in the current directory'
+    )
+    
+    # Add dynamic commands from plugins
+    local dynamic_commands
+    dynamic_commands=($(hyper 2>/dev/null | grep -E '^  [a-zA-Z]' | awk '{print $1":"$3}' | tr -d '[]'))
+    
+    _describe 'commands' commands
+    _describe 'plugin commands' dynamic_commands
+}
+
+_hyper
+'''
+
+
+def get_bash_completion_script() -> str:
+    """Generate Bash completion script."""
+    return '''_hyper_completion() {
+    local cur prev commands
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    
+    commands="init --ui --install-completion --show-completion --help"
+    
+    # Add dynamic commands
+    if command -v hyper >/dev/null 2>&1; then
+        local dynamic_commands
+        dynamic_commands=$(hyper 2>/dev/null | grep -E '^  [a-zA-Z]' | awk '{print $1}' | tr -d '[]')
+        commands="$commands $dynamic_commands"
+    fi
+    
+    case "${prev}" in
+        init)
+            COMPREPLY=( $(compgen -W "--force --help" -- ${cur}) )
+            return 0
+            ;;
+        hyper)
+            COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
+            return 0
+            ;;
+    esac
+    
+    COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
+}
+
+complete -F _hyper_completion hyper
+'''
+
+
+def check_completion_installed(shell: str) -> bool:
+    """Check if completion is already installed for the given shell."""
+    if shell == "zsh":
+        # Check common zsh completion locations
+        completion_paths = [
+            Path.home() / ".zsh" / "completions" / "_hyper",
+            Path.home() / ".local" / "share" / "zsh" / "site-functions" / "_hyper",
+            Path("/usr/local/share/zsh/site-functions/_hyper"),
+            Path("/opt/homebrew/share/zsh/site-functions/_hyper"),
+        ]
+        return any(path.exists() for path in completion_paths)
+
+    elif shell == "bash":
+        completion_paths = [
+            Path.home() / ".local" / "share" / "bash-completion" / "completions" / "hyper",
+            Path("/usr/local/etc/bash_completion.d/hyper"),
+            Path("/etc/bash_completion.d/hyper"),
+        ]
+        return any(path.exists() for path in completion_paths)
+
+    elif shell == "fish":
+        completion_path = Path.home() / ".config" / "fish" / "completions" / "hyper.fish"
+        return completion_path.exists()
+
+    return False
+
+
+def get_fish_completion_script() -> str:
+    """Generate Fish completion script."""
+    return '''# Completions for hyper command
+
+complete -c hyper -f
+
+# Main options
+complete -c hyper -l ui -d "Launch the UI interface"
+complete -c hyper -l install-completion -d "Install shell completion"
+complete -c hyper -l show-completion -d "Show shell completion script"
+complete -c hyper -l help -d "Show help message"
+
+# Commands
+complete -c hyper -n "__fish_use_subcommand" -a "init" -d "Initialize a new Hyper project"
+
+# Init command options
+complete -c hyper -n "__fish_seen_subcommand_from init" -l force -d "Skip confirmation and overwrite existing files"
+complete -c hyper -n "__fish_seen_subcommand_from init" -l help -d "Show help message"
+
+# Dynamic command completion function
+function __fish_hyper_complete_commands
+    hyper 2>/dev/null | grep -E '^  [a-zA-Z]' | awk '{print $1}' | tr -d '[]'
+end
+
+# Add dynamic commands
+complete -c hyper -n "__fish_use_subcommand" -a "(__fish_hyper_complete_commands)"
+'''
+
+
 @click.group(invoke_without_command=True)
 @click.option("--ui", is_flag=True, help="Launch the UI interface")
+@click.option("--install-completion", is_flag=True, help="Install shell completion")
+@click.option("--show-completion", is_flag=True, help="Show shell completion script")
 @click.pass_context
-def main(ctx: click.Context, ui: bool) -> None:
+def main(ctx: click.Context, ui: bool, install_completion: bool, show_completion: bool) -> None:
     """Hyper framework CLI tool."""
     console = Console()
 
     if ctx.invoked_subcommand is None:
-        if ui:
+        if install_completion:
+            install_shell_completion()
+            return
+        elif show_completion:
+            show_shell_completion()
+            return
+        elif ui:
             launch_ui()
         else:
             # Show available commands
@@ -76,6 +388,15 @@ def main(ctx: click.Context, ui: bool) -> None:
             console.print("\nUse 'hyper --ui' to launch the UI interface.")
             console.print("Use 'hyper <command>' to run a specific command.")
             console.print("Use 'hyper init' to initialize a new project.")
+
+            # Check if autocompletion is installed
+            shell = os.environ.get("SHELL", "").split("/")[-1]
+            if shell in ["zsh", "bash", "fish"]:
+                completion_installed = check_completion_installed(shell)
+                if not completion_installed:
+                    console.print("\n[dim]💡 Tip: Enable tab completion with 'hyper --install-completion'[/dim]")
+                else:
+                    console.print("\n[dim]💡 Tip: Use Tab to autocomplete commands and options[/dim]")
 
 
 @main.command()
