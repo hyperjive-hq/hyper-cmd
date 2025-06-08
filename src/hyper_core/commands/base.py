@@ -159,6 +159,40 @@ class BaseCommand(ABC, ICommand):
         with self.show_progress(description, total) as (progress, task_id):
             yield progress, task_id
 
+    def prompt(self, message: str, default: str | None = None) -> str:
+        """Prompt the user for text input using the command console.
+
+        Args:
+            message: Prompt message shown to the user
+            default: Optional default value if the user presses Enter
+
+        Returns:
+            The user provided value or ``default`` if given and no input was
+            entered.
+        """
+
+        response = self.console.input(message + " ")
+        if response == "" and default is not None:
+            return default
+        return response
+
+    def prompt_confirm(self, message: str, default: bool = False) -> bool:
+        """Prompt the user for a yes/no confirmation.
+
+        Args:
+            message: Prompt message shown to the user
+            default: Value returned when the user just presses Enter
+
+        Returns:
+            ``True`` if the user responded with yes, ``False`` otherwise.
+        """
+
+        prompt = f"{message} [{'Y/n' if default else 'y/N'}]:"
+        response = self.prompt(prompt)
+        if response == "":
+            return default
+        return response.strip().lower().startswith("y")
+
     def print_success(self, message: str) -> None:
         """Print a success message in green."""
         self.console.print(f"[green]✓[/] {message}")

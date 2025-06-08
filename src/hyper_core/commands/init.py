@@ -96,13 +96,11 @@ class InitCommand(BaseCommand):
 
     def _confirm_overwrite(self) -> bool:
         """Ask user to confirm overwriting existing .hyper directory."""
-        response = input("Do you want to overwrite the existing .hyper directory? [y/N]: ")
-        return response.lower().startswith("y")
+        return self.prompt_confirm("Do you want to overwrite the existing .hyper directory?", default=False)
 
     def _confirm_proceed(self) -> bool:
         """Ask user to confirm proceeding with initialization."""
-        response = input("Proceed with initialization? [Y/n]: ")
-        return not response.lower().startswith("n")
+        return self.prompt_confirm("Proceed with initialization?", default=True)
 
     def _show_initialization_plan(self, project_dir: Path) -> None:
         """Show what will be created during initialization."""

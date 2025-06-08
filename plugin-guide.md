@@ -168,6 +168,20 @@ class ValidatedCommand(BaseCommand):
         return 0
 ```
 
+### Prompting for User Input
+
+`BaseCommand` provides convenience helpers for interactive prompts so you don't
+have to call `input()` directly.
+
+```python
+class InteractiveCommand(BaseCommand):
+    def execute(self) -> int:
+        name = self.prompt("Enter your name", default="Stranger")
+        if self.prompt_confirm("Continue?", default=True):
+            self.print_success(f"Hello {name}!")
+        return 0
+```
+
 ## Creating Widgets
 
 Widgets provide visual components for terminal-based dashboard interfaces.
