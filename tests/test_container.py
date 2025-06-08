@@ -437,10 +437,11 @@ class TestContainerIntegration:
         # Test that it can be configured
         console = Console()
         from hyper_core.container import configure_container
+
         configure_container(container, console=console)
-        
+
         # Verify console was configured by accessing the provided instance
-        assert hasattr(container, 'console')
+        assert hasattr(container, "console")
         provided_console = container.console()
         assert provided_console is console
 

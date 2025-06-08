@@ -33,7 +33,7 @@ class MonitoringCommand(BaseCommand):
             memory_usage = 60.2 + (i * 1.5)  # Fake increasing memory usage
 
             self.console.print(
-                f"Interval {i+1}: CPU: {cpu_usage:.1f}%, Memory: {memory_usage:.1f}%"
+                f"Interval {i + 1}: CPU: {cpu_usage:.1f}%, Memory: {memory_usage:.1f}%"
             )
 
         return 0
@@ -134,17 +134,18 @@ class TestPluginSystem:
         commands = self.registry.list_commands()
         widgets = self.registry.list_widgets()
 
-        assert "monitoring" in commands  # The actual name registered 
+        assert "monitoring" in commands  # The actual name registered
         assert "systemstatus" in widgets
 
     def test_plugin_lifecycle_management(self):
         """Test plugin loading and unloading."""
         # Initialize registry with a temporary plugin path
         import tempfile
+
         with tempfile.TemporaryDirectory() as temp_dir:
             self.registry.add_plugin_path(temp_dir)
             self.registry.initialize()
-            
+
             # Test discovery (should be empty for temp dir)
             discovered = self.registry.discover_plugins()
             assert isinstance(discovered, list)
@@ -174,7 +175,7 @@ class TestPluginSystem:
         # Test configuration schema storage
         assert "api_key" in metadata.config_schema
         assert metadata.config_schema["timeout"]["default"] == 30
-        assert metadata.config_schema["debug"]["default"] == False
+        assert not metadata.config_schema["debug"]["default"]
 
 
 class TestPluginDiscovery:
@@ -201,11 +202,11 @@ class SampleCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "sample"
-    
+
     @property
     def description(self) -> str:
         return "Sample command"
-    
+
     def execute(self) -> int:
         self.print_success("Sample command executed!")
         return 0
@@ -254,11 +255,11 @@ class CustomCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "custom"
-    
+
     @property
     def description(self) -> str:
         return "Custom command"
-    
+
     def execute(self) -> int:
         return 0
 """
@@ -272,10 +273,10 @@ from hyper_core import BaseWidget, WidgetSize
 class CustomWidget(BaseWidget):
     def __init__(self):
         super().__init__(title="Custom", size=WidgetSize.SMALL)
-    
+
     def draw_content(self, stdscr, x, y, width, height):
         pass
-    
+
     def refresh_data(self):
         pass
 """
@@ -355,7 +356,7 @@ class TestPluginIntegration:
         try:
             commands = registry.list_commands()
             assert "broken" in commands
-            
+
             broken_cmd_class = registry.get_command("broken")
             broken_cmd = broken_cmd_class(container)
             result = broken_cmd.run()  # Use run() which has error handling

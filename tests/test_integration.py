@@ -35,7 +35,7 @@ class SystemMonitorCommand(BaseCommand):
         """Launch monitoring dashboard."""
         try:
             # Get services from container
-            ui_framework = self.container.get("ui_framework")
+            self.container.get("ui_framework")
             theme_manager = self.container.get("theme_manager")
             plugin_registry = self.container.get("plugin_registry")
 
@@ -64,13 +64,13 @@ class SystemMonitorCommand(BaseCommand):
 
         # Add core monitoring widgets (simulation for testing)
         dashboard.widgets = []
-        
+
         # Simulate widgets for testing
         class MockWidget:
             def __init__(self, name):
                 self.name = name
                 self.needs_redraw = False
-            
+
             def refresh_data(self):
                 self.needs_redraw = True
 
@@ -217,6 +217,7 @@ class ApplicationBootstrap:
         default_theme = config_service.get("ui.default_theme", "dark")
         if default_theme in theme_manager.get_available_themes():
             from hyper_core.ui.renderer import MockBackend
+
             mock_backend = MockBackend()
             theme_manager.set_theme(default_theme, mock_backend)
 
@@ -257,7 +258,7 @@ class ApplicationBootstrap:
                     plugin_registry.unload_plugin(plugin_name)
 
             self.initialized = False
-    
+
     def get_container(self):
         """Get the dependency injection container."""
         return self.container
@@ -324,11 +325,11 @@ class TestCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "test"
-    
+
     @property
     def description(self) -> str:
         return "Test command from plugin"
-    
+
     def execute(self) -> int:
         self.print_success("Test plugin command executed!")
         return 0
@@ -336,13 +337,13 @@ class TestCommand(BaseCommand):
 class TestWidget(BaseWidget):
     def __init__(self):
         super().__init__(title="Test Widget", size=WidgetSize.SMALL)
-    
+
     def draw_content(self, stdscr, x, y, width, height):
         try:
             stdscr.addstr(y + 1, x + 2, "Plugin widget working!")
         except:
             pass
-    
+
     def refresh_data(self):
         self.needs_redraw = True
 '''
@@ -360,13 +361,13 @@ class TestWidget(BaseWidget):
             config.set("plugins.plugin_directories", [str(temp_dir)])
 
             # Reinitialize plugins with new directory
-            plugin_registry = container.get("plugin_registry")
+            container.get("plugin_registry")
             discovery = PluginDiscovery(str(temp_dir))
             discovered_paths = discovery.discover()
 
             # Verify plugin was discovered
             assert len(discovered_paths) > 0, "No plugins discovered"
-            
+
             # For testing purposes, just verify the plugin directory structure exists
             plugin_found = any(path.name == "test_plugin" for path in discovered_paths)
             assert plugin_found, "Integration test plugin not found"
@@ -387,6 +388,7 @@ class TestWidget(BaseWidget):
 
         # Switch to monitoring theme
         from hyper_core.ui.renderer import MockBackend
+
         mock_backend = MockBackend()
         theme_manager.set_theme("monitoring", mock_backend)
         current_theme = theme_manager.get_current_theme()
@@ -434,19 +436,19 @@ class TestWidget(BaseWidget):
         app.initialize()
 
         container = app.get_container()
-        ui_framework = container.get("ui_framework")
-        theme_manager = container.get("theme_manager")
+        container.get("ui_framework")
+        container.get("theme_manager")
 
         # Create dashboard with mock widgets
         dashboard = ContentPanel("Integration Test Dashboard")
         dashboard.widgets = []
-        
+
         # Mock widgets for testing
         class MockWidget:
             def __init__(self, name):
                 self.name = name
                 self.needs_redraw = False
-            
+
             def refresh_data(self):
                 self.needs_redraw = True
 
@@ -484,6 +486,7 @@ class TestRealWorldScenarios:
         # Switch to monitoring theme
         theme_manager = container.get("theme_manager")
         from hyper_core.ui.renderer import MockBackend
+
         mock_backend = MockBackend()
         theme_manager.set_theme("monitoring", mock_backend)
 
@@ -492,7 +495,7 @@ class TestRealWorldScenarios:
         dashboard = monitor_cmd._create_dashboard(theme_manager, container.get("plugin_registry"))
 
         # Simulate monitoring cycles
-        for cycle in range(3):
+        for _cycle in range(3):
             monitor_cmd._update_dashboard_widgets(dashboard)
 
             # Verify widgets are updating
@@ -523,18 +526,18 @@ class AlertCommand(BaseCommand):
     @property
     def name(self) -> str:
         return "alert"
-    
+
     @property
     def description(self) -> str:
         return "Configure monitoring alerts"
-    
+
     def execute(self, threshold: float = 80.0, email: str = None) -> int:
         config = self.container.get("config")
         config.set("monitoring.alert_thresholds.cpu", threshold)
-        
+
         if email:
             config.set("monitoring.alert_email", email)
-        
+
         self.print_success(f"Alert threshold set to {threshold}%")
         return 0
 
@@ -542,14 +545,14 @@ class DiskUsageWidget(BaseWidget):
     def __init__(self):
         super().__init__(title="Disk Usage", size=WidgetSize.MEDIUM)
         self.disk_usage = 0.0
-    
+
     def draw_content(self, stdscr, x, y, width, height):
         try:
             usage_text = f"Disk: {self.disk_usage:.1f}%"
             stdscr.addstr(y + 1, x + 2, usage_text)
         except:
             pass
-    
+
     def refresh_data(self):
         import random
         self.disk_usage = random.uniform(20, 95)
@@ -565,7 +568,7 @@ class DiskUsageWidget(BaseWidget):
             app.initialize()
 
             container = app.get_container()
-            plugin_registry = container.get("plugin_registry")
+            container.get("plugin_registry")
 
             # Discover plugin
             discovery = PluginDiscovery(str(temp_dir))
@@ -573,7 +576,7 @@ class DiskUsageWidget(BaseWidget):
 
             # Verify plugin was discovered
             assert len(discovered_paths) > 0, "No plugins discovered"
-            
+
             # For testing purposes, just verify the plugin directory structure exists
             plugin_found = any(path.name == "monitoring_plugin" for path in discovered_paths)
             assert plugin_found, "Advanced monitoring plugin not found"

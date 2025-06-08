@@ -135,7 +135,7 @@ class TestCommandFramework:
         """Test command error handling and exit codes."""
         container = SimpleContainer()
         container.register(Console, Console())
-        
+
         # Register mock user service
         mock_user_service = Mock()
         container.register("user_service", mock_user_service)
