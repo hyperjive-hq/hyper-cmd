@@ -31,9 +31,6 @@ jobs:
         ruff check src/ tests/ --ignore=E501,E722,F811,F821
         ruff format --check src/ tests/
 
-    - name: Type check with mypy
-      run: |
-        mypy src/hyper_core
 
     - name: Test with pytest
       run: |

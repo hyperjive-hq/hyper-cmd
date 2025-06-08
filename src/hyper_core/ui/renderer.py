@@ -8,7 +8,7 @@ allowing the UI framework to work with different rendering systems
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass
@@ -70,7 +70,7 @@ class RenderingBackend(ABC):
         pass
 
     @abstractmethod
-    def init_theme_colors(self, theme) -> None:
+    def init_theme_colors(self, theme: Any) -> None:
         """Initialize all theme colors at once."""
         pass
 
@@ -135,22 +135,22 @@ class BoxChars:
     LRCORNER = "┘"
 
     # These will be set by the backend if special chars are available
-    ACS_HLINE = None
-    ACS_VLINE = None
-    ACS_ULCORNER = None
-    ACS_URCORNER = None
-    ACS_LLCORNER = None
-    ACS_LRCORNER = None
+    ACS_HLINE: Optional[Any] = None
+    ACS_VLINE: Optional[Any] = None
+    ACS_ULCORNER: Optional[Any] = None
+    ACS_URCORNER: Optional[Any] = None
+    ACS_LLCORNER: Optional[Any] = None
+    ACS_LRCORNER: Optional[Any] = None
 
 
 class NCursesBackend(RenderingBackend):
     """NCurses implementation of the rendering backend."""
 
-    def __init__(self):
-        self._stdscr = None
-        self._windows = {}
-        self._next_window_id = 0
-        self._curses = None
+    def __init__(self) -> None:
+        self._stdscr: Optional[Any] = None
+        self._windows: dict[int, Any] = {}
+        self._next_window_id: int = 0
+        self._curses: Optional[Any] = None
 
     def init(self) -> None:
         """Initialize ncurses."""
@@ -158,7 +158,7 @@ class NCursesBackend(RenderingBackend):
 
         self._curses = curses
 
-    def setup(self, stdscr) -> None:
+    def setup(self, stdscr: Any) -> None:
         """Setup ncurses with the standard screen."""
         self._stdscr = stdscr
 
@@ -194,7 +194,7 @@ class NCursesBackend(RenderingBackend):
 
     def get_screen_size(self) -> tuple[int, int]:
         """Get screen size."""
-        if self._stdscr:
+        if self._stdscr is not None:
             return self._stdscr.getmaxyx()
         return (24, 80)  # Default size
 
@@ -206,12 +206,12 @@ class NCursesBackend(RenderingBackend):
 
     def refresh(self) -> None:
         """Refresh the display."""
-        if self._stdscr:
+        if self._stdscr is not None:
             self._stdscr.refresh()
 
     def get_input(self, timeout: int = -1) -> int:
         """Get keyboard input."""
-        if self._stdscr:
+        if self._stdscr is not None:
             if timeout >= 0:
                 self._stdscr.timeout(timeout)
             return self._stdscr.getch()
@@ -220,35 +220,39 @@ class NCursesBackend(RenderingBackend):
     def set_cursor_visible(self, visible: bool) -> None:
         """Set cursor visibility."""
         try:
-            self._curses.curs_set(1 if visible else 0)
-        except:
+            if self._curses is not None:
+                self._curses.curs_set(1 if visible else 0)
+        except Exception:  # type: ignore[misc]
             pass  # Some terminals don't support cursor visibility
 
     def has_colors(self) -> bool:
         """Check color support."""
-        return self._curses.has_colors()
+        if self._curses is not None:
+            return self._curses.has_colors()
+        return False
 
     def init_colors(self) -> None:
         """Initialize colors."""
-        if self.has_colors():
+        if self.has_colors() and self._curses is not None:
             self._curses.start_color()
             self._curses.use_default_colors()
 
-    def init_theme_colors(self, theme) -> None:
+    def init_theme_colors(self, theme: Any) -> None:
         """Initialize theme colors."""
         if not self.has_colors():
             return
 
         # Get curses-compatible colors from theme
-        colors_dict = theme.colors.get_curses_colors()
+        colors_dict: dict[str, tuple[int, int]] = theme.colors.get_curses_colors()
 
         # Initialize color pairs according to theme mapping
         for pair_id, color_name in theme.COLOR_PAIR_MAPPING.items():
             if color_name in colors_dict:
                 fg, bg = colors_dict[color_name]
                 try:
-                    self._curses.init_pair(pair_id, fg, bg)
-                except self._curses.error:
+                    if self._curses is not None:
+                        self._curses.init_pair(pair_id, fg, bg)
+                except Exception:  # type: ignore[misc]
                     # Ignore errors (e.g., invalid color values)
                     pass
 
@@ -256,7 +260,7 @@ class NCursesBackend(RenderingBackend):
 class NCursesWindow(Window):
     """NCurses window implementation."""
 
-    def __init__(self, window, curses_module):
+    def __init__(self, window: Any, curses_module: Any) -> None:
         self._window = window
         self._curses = curses_module
 
@@ -276,7 +280,7 @@ class NCursesWindow(Window):
         """Add string with error handling."""
         try:
             self._window.addstr(y, x, text, attrs)
-        except self._curses.error:
+        except Exception:  # type: ignore[misc]
             # Ignore curses errors (typically writing outside window bounds)
             pass
 
@@ -284,7 +288,7 @@ class NCursesWindow(Window):
         """Add character with error handling."""
         try:
             self._window.addch(y, x, ch, attrs)
-        except self._curses.error:
+        except Exception:  # type: ignore[misc]
             pass
 
     def get_max_yx(self) -> tuple[int, int]:
@@ -295,14 +299,14 @@ class NCursesWindow(Window):
 class MockBackend(RenderingBackend):
     """Mock rendering backend for testing."""
 
-    def __init__(self, width: int = 80, height: int = 24):
+    def __init__(self, width: int = 80, height: int = 24) -> None:
         self.width = width
         self.height = height
         self.cursor_visible = True
         self.color_support = True
-        self.input_queue = []
-        self.screen_buffer = [[" " for _ in range(width)] for _ in range(height)]
-        self.attribute_buffer = [[0 for _ in range(width)] for _ in range(height)]
+        self.input_queue: list[int] = []
+        self.screen_buffer: list[list[str]] = [[" " for _ in range(width)] for _ in range(height)]
+        self.attribute_buffer: list[list[int]] = [[0 for _ in range(width)] for _ in range(height)]
 
     def init(self) -> None:
         """Initialize mock backend."""
@@ -348,11 +352,11 @@ class MockBackend(RenderingBackend):
         """Mock color initialization."""
         pass
 
-    def init_theme_colors(self, theme) -> None:
+    def init_theme_colors(self, theme: Any) -> None:
         """Mock theme color initialization."""
         # For testing, we just store the theme reference
         # In a real implementation, this would set up color pairs
-        self.current_theme = theme
+        self.current_theme: Any = theme
 
     def add_input(self, key: int) -> None:
         """Add input to the queue for testing."""
@@ -368,7 +372,7 @@ class MockBackend(RenderingBackend):
 class MockWindow(Window):
     """Mock window for testing."""
 
-    def __init__(self, backend: MockBackend, spec: WindowSpec):
+    def __init__(self, backend: MockBackend, spec: WindowSpec) -> None:
         self.backend = backend
         self.spec = spec
 

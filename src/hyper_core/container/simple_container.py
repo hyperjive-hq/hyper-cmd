@@ -41,7 +41,7 @@ class SimpleContainer:
     for plugin authors who need basic DI without complexity.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an empty container."""
         self._services: dict[type, Any] = {}
         self._factories: dict[type, Callable[[], Any]] = {}
@@ -84,14 +84,14 @@ class SimpleContainer:
         """
         # Return cached instance if available
         if service_type in self._services:
-            return self._services[service_type]
+            return self._services[service_type]  # type: ignore[return-value]
 
         # Create instance from factory if available
         if service_type in self._factories:
             instance = self._factories[service_type]()
             # Cache for future use (singleton behavior)
             self._services[service_type] = instance
-            return instance
+            return instance  # type: ignore[return-value]
 
         # Service not found
         service_name = getattr(service_type, "__name__", str(service_type))

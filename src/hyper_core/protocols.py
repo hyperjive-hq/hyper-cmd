@@ -56,7 +56,7 @@ class ICommand(Protocol):
         ...
 
     @abstractmethod
-    def execute(self, *args, **kwargs) -> int:
+    def execute(self, *args: Any, **kwargs: Any) -> int:
         """
         Execute the command's core logic.
 
@@ -73,7 +73,7 @@ class ICommand(Protocol):
         ...
 
     @abstractmethod
-    def run(self, *args, **kwargs) -> int:
+    def run(self, *args: Any, **kwargs: Any) -> int:
         """
         Run the command with standardized error handling.
 
