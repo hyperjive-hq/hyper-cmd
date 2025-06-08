@@ -159,7 +159,7 @@ class BaseCommand(ABC, ICommand):
         with self.show_progress(description, total) as (progress, task_id):
             yield progress, task_id
 
-    def prompt(self, message: str, default: str | None = None) -> str:
+    def prompt(self, message: str, default: Optional[str] = None) -> str:
         """Prompt the user for text input using the command console.
 
         Args:
