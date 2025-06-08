@@ -172,15 +172,17 @@ class PluginLoader:
         """Get default plugin search paths including .hyper directory."""
         paths = []
         
-        # Get .hyper/plugins if it exists
+        # Get .hyper/plugins if it exists - only use the first .hyper directory found
         config = get_config()
         if config.has_hyper_directory():
             hyper_plugins = config.get_plugins_directory()
             if hyper_plugins:
                 paths.append(hyper_plugins)
                 logger.debug(f"Added .hyper/plugins search path: {hyper_plugins}")
+                # Return early - only use the first .hyper directory found
+                return paths
         
-        # Add traditional search paths
+        # Add traditional search paths only if no .hyper directory found
         paths.extend([
             Path.cwd() / "plugins",  # ./plugins
             Path.home() / ".hyper" / "plugins",  # ~/.hyper/plugins (global)
@@ -194,6 +196,9 @@ class PluginLoader:
     
     def discover_plugins(self) -> None:
         """Discover and load plugins from all search paths."""
+        # Clear previously loaded plugins to ensure replacement
+        self._loaded_plugins.clear()
+        
         for search_path in self._search_paths:
             if search_path.exists() and search_path.is_dir():
                 discovery = PluginDiscovery(str(search_path))

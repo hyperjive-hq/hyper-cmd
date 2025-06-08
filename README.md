@@ -40,6 +40,12 @@ Test the framework with the included example:
 hyper hello --name "Your Name" --style fancy
 ```
 
+Or launch the interactive UI:
+
+```bash
+hyper --ui
+```
+
 ### Project Configuration
 
 The `.hyper/config.yaml` file controls project settings:
@@ -125,7 +131,6 @@ class StatusWidget(BaseWidget):
 
 - **[Architecture Guide](architecture.md)** - High-level system architecture and component interactions
 - **[Plugin Development Guide](plugin-guide.md)** - Complete guide for developing plugins
-- Full documentation is available at [https://hyper-core.readthedocs.io](https://hyper-core.readthedocs.io)
 
 ## License
 

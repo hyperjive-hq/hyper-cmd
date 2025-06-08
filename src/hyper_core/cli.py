@@ -1,13 +1,14 @@
 """CLI module for the hyper command."""
 
 import sys
+import inspect
 from typing import List, Optional
 import click
 from rich.console import Console
 
 from .commands.registry import CommandRegistry
 from .commands.init import InitCommand
-from .plugins.loader import PluginLoader
+from .plugins.registry import plugin_registry
 from .container.simple_container import SimpleContainer
 
 
@@ -18,13 +19,18 @@ def discover_commands() -> CommandRegistry:
     # Register built-in commands first
     registry.register(InitCommand, "init")
     
-    # Load plugins which may register commands
-    plugin_loader = PluginLoader()
-    plugin_loader.discover_plugins()
+    # Initialize and load plugins from .hyper directory
+    plugin_registry.initialize()
+    discovered_plugins = plugin_registry.discover_plugins()
     
-    for plugin in plugin_loader.get_loaded_plugins():
-        if hasattr(plugin, 'register_commands'):
-            plugin.register_commands(registry)
+    # Load all discovered plugins
+    for plugin_name in discovered_plugins:
+        plugin_registry.load_plugin(plugin_name)
+    
+    # Get commands from plugin registry and register them with Click registry
+    plugin_commands = plugin_registry.get_commands_for_click()
+    for cmd_name, cmd_class in plugin_commands.items():
+        registry.register(cmd_class, cmd_name)
     
     return registry
 
@@ -52,7 +58,8 @@ def main(ctx: click.Context, ui: bool) -> None:
                     cmd_class = registry.get(cmd_name)
                     if cmd_class:
                         try:
-                            instance = cmd_class()
+                            container = SimpleContainer()
+                            instance = cmd_class(container)
                             description = instance.description if hasattr(instance, 'description') else 'No description'
                             console.print(f"  [cyan]{cmd_name}[/cyan] - {description}")
                         except Exception:
@@ -143,7 +150,8 @@ def show_commands_panel(framework) -> None:
                         cmd_class = self.registry.get(cmd_name)
                         if cmd_class:
                             try:
-                                instance = cmd_class()
+                                container = SimpleContainer()
+                                instance = cmd_class(container)
                                 description = instance.description if hasattr(instance, 'description') else 'No description'
                                 line = f"{cmd_name}: {description}"[:ctx.width-6]
                                 ctx.window.add_str(ctx.y + i + 3, ctx.x + 4, line)
@@ -168,12 +176,11 @@ def show_plugins_panel(framework) -> None:
     class PluginsPanel(ContentPanel):
         def __init__(self):
             super().__init__("Loaded Plugins")
-            self.plugin_loader = PluginLoader()
-            self.plugin_loader.discover_plugins()
             
         def render_content(self, ctx: RenderContext) -> None:
             """Render the plugins list using the new rendering system."""
-            plugins = self.plugin_loader.get_loaded_plugins()
+            # Get plugins from the new plugin registry
+            plugins = plugin_registry.plugins
             
             # Clear area
             for y in range(ctx.height):
@@ -184,10 +191,10 @@ def show_plugins_panel(framework) -> None:
             
             # Render plugins
             if plugins:
-                for i, plugin in enumerate(plugins):
+                for i, (plugin_name, plugin_info) in enumerate(plugins.items()):
                     if i + 3 < ctx.height - 1:  # Leave space for help
-                        plugin_name = getattr(plugin, '__name__', str(plugin))
-                        line = f"{plugin_name}"[:ctx.width-6]
+                        status = plugin_info['status']
+                        line = f"{plugin_name} ({status})"[:ctx.width-6]
                         ctx.window.add_str(ctx.y + i + 3, ctx.x + 4, line)
             else:
                 ctx.window.add_str(ctx.y + 3, ctx.x + 4, "No plugins loaded.")
@@ -211,22 +218,85 @@ def register_dynamic_commands():
             
         cmd_class = registry.get(cmd_name)
         if cmd_class:
-            @click.command(name=cmd_name)
+            # Get the command's execute method signature to create Click options
+            temp_instance = cmd_class(container)
+            description = getattr(temp_instance, 'description', f"Command: {cmd_name}")
+            
+            @click.command(name=cmd_name, help=description)
             @click.pass_context
-            def command_wrapper(ctx, cmd_class=cmd_class):
+            def command_wrapper(ctx, cmd_class=cmd_class, **kwargs):
                 """Dynamically created command wrapper."""
                 try:
                     instance = cmd_class(container)
-                    exit_code = instance.run()
+                    
+                    # Handle extra arguments
+                    extra_args = kwargs.pop('extra_args', ())
+                    
+                    # Filter kwargs to only include those accepted by the execute method
+                    sig = inspect.signature(instance.execute)
+                    filtered_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
+                    
+                    # Add extra args if the method accepts *args
+                    has_varargs = any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in sig.parameters.values())
+                    if has_varargs:
+                        exit_code = instance.execute(*extra_args, **filtered_kwargs)
+                    else:
+                        exit_code = instance.execute(**filtered_kwargs)
+                    
                     sys.exit(exit_code)
                 except Exception as e:
                     console = Console()
                     console.print(f"[red]Error running command '{cmd_name}':[/red] {e}")
                     sys.exit(1)
             
+            # Add Click options based on the execute method signature
+            try:
+                sig = inspect.signature(temp_instance.execute)
+                has_varargs = False
+                
+                for param_name, param in sig.parameters.items():
+                    if param_name == 'args' and param.kind == inspect.Parameter.VAR_POSITIONAL:
+                        # Add support for extra arguments
+                        command_wrapper = click.argument('extra_args', nargs=-1)(command_wrapper)
+                        has_varargs = True
+                        continue
+                    elif param_name in ['kwargs']:
+                        continue
+                    
+                    # Determine parameter type and default
+                    param_type = str
+                    default = None
+                    is_flag = False
+                    
+                    if param.annotation == bool:
+                        is_flag = True
+                    elif param.annotation in [int, float]:
+                        param_type = param.annotation
+                    
+                    if param.default != inspect.Parameter.empty:
+                        default = param.default
+                        if isinstance(default, bool):
+                            is_flag = True
+                    
+                    # Create option name
+                    option_name = f"--{param_name.replace('_', '-')}"
+                    
+                    if is_flag:
+                        command_wrapper = click.option(option_name, is_flag=True, default=default, 
+                                                     help=f"{param_name} flag")(command_wrapper)
+                    else:
+                        command_wrapper = click.option(option_name, default=default, type=param_type,
+                                                     help=f"{param_name} parameter")(command_wrapper)
+            except Exception:
+                # If we can't analyze the signature, just continue
+                pass
+            
             main.add_command(command_wrapper)
 
 
+# Register dynamic commands when module is imported
+register_dynamic_commands()
+
+
 if __name__ == '__main__':
-    register_dynamic_commands()
     main()

@@ -94,26 +94,42 @@ class PluginRegistry:
             for name, metadata in self._plugins.items()
         }
     
-    def initialize(self, plugin_paths: Optional[List[Union[str, Path]]] = None):
+    def initialize(self, plugin_paths: Optional[List[Union[str, Path]]] = None, force_reinitialize: bool = False):
         """Initialize the registry with plugin search paths."""
-        if self._initialized:
+        if self._initialized and not force_reinitialize:
             logger.warning("Plugin registry already initialized")
             return
         
-        # Add .hyper/plugins directory if it exists
+        # Clear existing plugins when initializing to ensure replacement
+        self._plugins.clear()
+        self._command_registry.clear()
+        self._widget_registry.clear()
+        self._page_registry.clear()
+        self._service_registry.clear()
+        self._plugin_paths.clear()
+        
+        # Add .hyper/plugins directory if it exists - only use the first .hyper directory found
         config = get_config()
         if config.has_hyper_directory():
             hyper_plugins = config.get_plugins_directory()
             if hyper_plugins:
                 self.add_plugin_path(hyper_plugins)
-        
-        # Add any additional plugin paths
-        if plugin_paths:
-            for path in plugin_paths:
-                self.add_plugin_path(path)
-        
-        # Add default paths if no .hyper directory found
-        if not config.has_hyper_directory():
+                # Only use additional plugin paths if specified, but not default paths
+                if plugin_paths:
+                    for path in plugin_paths:
+                        self.add_plugin_path(path)
+            else:
+                # .hyper exists but no plugins directory - still don't use default paths
+                if plugin_paths:
+                    for path in plugin_paths:
+                        self.add_plugin_path(path)
+        else:
+            # Add any additional plugin paths
+            if plugin_paths:
+                for path in plugin_paths:
+                    self.add_plugin_path(path)
+            
+            # Add default paths only if no .hyper directory found
             default_paths = [
                 Path.cwd() / "plugins",
                 Path.home() / ".hyper" / "plugins"
@@ -145,15 +161,20 @@ class PluginRegistry:
             
             for plugin_dir in plugin_dirs:
                 plugin_name = plugin_dir.name
-                if plugin_name not in self._plugins:
-                    discovered.append(plugin_name)
-                    logger.info(f"Discovered plugin: {plugin_name}")
+                # Always discover plugins, even if they exist (for replacement)
+                discovered.append(plugin_name)
+                logger.info(f"Discovered plugin: {plugin_name}")
         
         return discovered
     
     def load_plugin(self, plugin_name: str, reload: bool = False) -> bool:
         """Load a plugin by name."""
         try:
+            # If plugin already exists, unload it first to ensure replacement
+            if plugin_name in self._plugins:
+                logger.info(f"Plugin '{plugin_name}' already loaded, unloading for replacement")
+                self.unload_plugin(plugin_name)
+            
             # Trigger lifecycle hook
             self._trigger_lifecycle_hook(PluginLifecycleHook.BEFORE_LOAD, plugin_name)
             
@@ -237,6 +258,27 @@ class PluginRegistry:
         except Exception as e:
             logger.error(f"Failed to unload plugin '{plugin_name}': {e}")
             self._trigger_lifecycle_hook(PluginLifecycleHook.ON_ERROR, plugin_name, e)
+            return False
+    
+    def reload_plugins(self) -> bool:
+        """Reload all plugins from the first .hyper directory found."""
+        try:
+            logger.info("Reloading plugins from .hyper directory")
+            
+            # Reinitialize to clear existing plugins and reload from .hyper directory
+            self.initialize(force_reinitialize=True)
+            
+            # Discover and load all plugins
+            discovered_plugins = self.discover_plugins()
+            
+            for plugin_name in discovered_plugins:
+                self.load_plugin(plugin_name)
+            
+            logger.info(f"Successfully reloaded {len(discovered_plugins)} plugins")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to reload plugins: {e}")
             return False
     
     def activate_plugin(self, plugin_name: str) -> bool:

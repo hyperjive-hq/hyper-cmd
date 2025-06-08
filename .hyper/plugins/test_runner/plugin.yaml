@@ -1,0 +1,36 @@
+name: test_runner
+version: 1.0.0
+description: Run project tests using pytest with virtual environment management
+author: Hyper Team
+dependencies: []
+
+config_schema:
+  default_coverage: 
+    type: boolean
+    default: false
+    description: Enable coverage by default
+  
+  default_verbose:
+    type: boolean  
+    default: false
+    description: Enable verbose output by default
+    
+  auto_install:
+    type: boolean
+    default: true
+    description: Automatically run pip install -e . before tests
+
+commands:
+  - name: test
+    description: Run project tests with venv management
+    class: TestCommand
+  
+  - name: test-info
+    description: Show test environment information
+    class: TestInfoCommand
+
+tags:
+  - testing
+  - pytest
+  - development
+  - venv

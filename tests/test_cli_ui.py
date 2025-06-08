@@ -14,7 +14,6 @@ from hyper_core.ui.framework import NCursesFramework
 from hyper_core.cli import show_commands_panel, show_plugins_panel, discover_commands
 from hyper_core.commands.registry import CommandRegistry
 from hyper_core.commands.base import BaseCommand
-from hyper_core.plugins.loader import PluginLoader
 
 
 class TestCommand(BaseCommand):
@@ -152,27 +151,28 @@ class TestPluginsPanel:
         framework = Mock()
         framework.set_panel = Mock()
         
-        # Mock empty plugin loader
-        with patch.object(PluginLoader, 'discover_plugins'):
-            with patch.object(PluginLoader, 'get_loaded_plugins', return_value=[]):
-                # Show panel
-                show_plugins_panel(framework)
-                
-                # Get the panel
-                panel = framework.set_panel.call_args[0][0]
-                
-                # Render
-                ctx = RenderContext(
-                    window=engine.root_window,
-                    x=0, y=0, width=60, height=20
-                )
-                panel.render_content(ctx)
-                
-                # Check output
-                output = ''.join([''.join(row) for row in backend.screen_buffer])
-                assert "Loaded Plugins:" in output
-                assert "No plugins loaded." in output
-                assert "Press 'b' to go back" in output
+        # Mock empty plugin registry
+        from hyper_core.plugins.registry import plugin_registry
+        
+        with patch.object(plugin_registry, '_plugins', {}):
+            # Show panel
+            show_plugins_panel(framework)
+            
+            # Get the panel
+            panel = framework.set_panel.call_args[0][0]
+            
+            # Render
+            ctx = RenderContext(
+                window=engine.root_window,
+                x=0, y=0, width=60, height=20
+            )
+            panel.render_content(ctx)
+            
+            # Check output
+            output = ''.join([''.join(row) for row in backend.screen_buffer])
+            assert "Loaded Plugins:" in output
+            assert "No plugins loaded." in output
+            assert "Press 'b' to go back" in output
     
     def test_plugins_panel_with_plugins(self):
         """Test plugins panel with loaded plugins."""
@@ -190,28 +190,43 @@ class TestPluginsPanel:
         plugin2 = Mock()
         plugin2.__name__ = "test_plugin_2"
         
-        # Mock plugin loader with plugins
-        with patch.object(PluginLoader, 'discover_plugins'):
-            with patch.object(PluginLoader, 'get_loaded_plugins', return_value=[plugin1, plugin2]):
-                # Show panel
-                show_plugins_panel(framework)
-                
-                # Get the panel
-                panel = framework.set_panel.call_args[0][0]
-                
-                # Render
-                ctx = RenderContext(
-                    window=engine.root_window,
-                    x=0, y=0, width=60, height=20
-                )
-                panel.render_content(ctx)
-                
-                # Check output
-                output = ''.join([''.join(row) for row in backend.screen_buffer])
-                assert "Loaded Plugins:" in output
-                assert "test_plugin_1" in output
-                assert "test_plugin_2" in output
-                assert "Press 'b' to go back" in output
+        # Mock plugin registry with plugins
+        from hyper_core.plugins.registry import plugin_registry, PluginMetadata
+        
+        # Create mock plugin metadata objects
+        metadata1 = PluginMetadata("test_plugin_1", "1.0.0")
+        metadata1.loaded = True
+        metadata1.module = plugin1
+        
+        metadata2 = PluginMetadata("test_plugin_2", "1.0.0")
+        metadata2.loaded = True
+        metadata2.module = plugin2
+        
+        mock_plugins = {
+            "test_plugin_1": metadata1,
+            "test_plugin_2": metadata2
+        }
+        
+        with patch.object(plugin_registry, '_plugins', mock_plugins):
+            # Show panel
+            show_plugins_panel(framework)
+            
+            # Get the panel
+            panel = framework.set_panel.call_args[0][0]
+            
+            # Render
+            ctx = RenderContext(
+                window=engine.root_window,
+                x=0, y=0, width=60, height=20
+            )
+            panel.render_content(ctx)
+            
+            # Check output
+            output = ''.join([''.join(row) for row in backend.screen_buffer])
+            assert "Loaded Plugins:" in output
+            assert "test_plugin_1 (active)" in output
+            assert "test_plugin_2 (active)" in output
+            assert "Press 'b' to go back" in output
 
 
 class TestCLIUIIntegration:
