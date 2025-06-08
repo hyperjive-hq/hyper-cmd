@@ -55,7 +55,7 @@ class SystemStatusWidget(BaseWidget):
             stdscr.addstr(y + 1, x + 2, f"CPU:    {self.cpu_usage:.1f}%")
             stdscr.addstr(y + 2, x + 2, f"Memory: {self.memory_usage:.1f}%")
             stdscr.addstr(y + 3, x + 2, f"Disk:   {self.disk_usage:.1f}%")
-        except:
+        except Exception:
             # Handle curses errors gracefully in tests
             pass
 

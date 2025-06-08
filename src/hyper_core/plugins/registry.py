@@ -501,7 +501,7 @@ class PluginRegistry:
                     return component_class.__name__.lower().replace(component_type, "")
                 else:
                     return name_attr
-            except:
+            except Exception:
                 pass
 
         # Fallback to class name

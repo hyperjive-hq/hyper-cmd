@@ -204,11 +204,11 @@ def install_fish_completion() -> None:
 
 def get_zsh_completion_script() -> str:
     """Generate Zsh completion script."""
-    return '''#compdef hyper
+    return """#compdef hyper
 
 _hyper() {
     local context state line
-    
+
     _arguments -C \
         '--ui[Launch the UI interface]' \
         '--install-completion[Install shell completion]' \
@@ -216,7 +216,7 @@ _hyper() {
         '--help[Show help message]' \
         '1: :_hyper_commands' \
         '*::arg:->args'
-    
+
     case $state in
         args)
             case $line[1] in
@@ -235,36 +235,36 @@ _hyper_commands() {
     commands=(
         'init:Initialize a new Hyper project in the current directory'
     )
-    
+
     # Add dynamic commands from plugins
     local dynamic_commands
     dynamic_commands=($(hyper 2>/dev/null | grep -E '^  [a-zA-Z]' | awk '{print $1":"$3}' | tr -d '[]'))
-    
+
     _describe 'commands' commands
     _describe 'plugin commands' dynamic_commands
 }
 
 _hyper
-'''
+"""
 
 
 def get_bash_completion_script() -> str:
     """Generate Bash completion script."""
-    return '''_hyper_completion() {
+    return """_hyper_completion() {
     local cur prev commands
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    
+
     commands="init --ui --install-completion --show-completion --help"
-    
+
     # Add dynamic commands
     if command -v hyper >/dev/null 2>&1; then
         local dynamic_commands
         dynamic_commands=$(hyper 2>/dev/null | grep -E '^  [a-zA-Z]' | awk '{print $1}' | tr -d '[]')
         commands="$commands $dynamic_commands"
     fi
-    
+
     case "${prev}" in
         init)
             COMPREPLY=( $(compgen -W "--force --help" -- ${cur}) )
@@ -275,12 +275,12 @@ def get_bash_completion_script() -> str:
             return 0
             ;;
     esac
-    
+
     COMPREPLY=( $(compgen -W "${commands}" -- ${cur}) )
 }
 
 complete -F _hyper_completion hyper
-'''
+"""
 
 
 def check_completion_installed(shell: str) -> bool:
@@ -312,7 +312,7 @@ def check_completion_installed(shell: str) -> bool:
 
 def get_fish_completion_script() -> str:
     """Generate Fish completion script."""
-    return '''# Completions for hyper command
+    return """# Completions for hyper command
 
 complete -c hyper -f
 
@@ -336,7 +336,7 @@ end
 
 # Add dynamic commands
 complete -c hyper -n "__fish_use_subcommand" -a "(__fish_hyper_complete_commands)"
-'''
+"""
 
 
 @click.group(invoke_without_command=True)
@@ -394,9 +394,13 @@ def main(ctx: click.Context, ui: bool, install_completion: bool, show_completion
             if shell in ["zsh", "bash", "fish"]:
                 completion_installed = check_completion_installed(shell)
                 if not completion_installed:
-                    console.print("\n[dim]💡 Tip: Enable tab completion with 'hyper --install-completion'[/dim]")
+                    console.print(
+                        "\n[dim]💡 Tip: Enable tab completion with 'hyper --install-completion'[/dim]"
+                    )
                 else:
-                    console.print("\n[dim]💡 Tip: Use Tab to autocomplete commands and options[/dim]")
+                    console.print(
+                        "\n[dim]💡 Tip: Use Tab to autocomplete commands and options[/dim]"
+                    )
 
 
 @main.command()

@@ -259,10 +259,6 @@ class ApplicationBootstrap:
 
             self.initialized = False
 
-    def get_container(self):
-        """Get the dependency injection container."""
-        return self.container
-
 
 class TestCompleteIntegration:
     """Test complete application integration scenarios."""
