@@ -372,6 +372,47 @@ class {plugin_name.title().replace("_", "")}Command(BaseCommand):
         finally:
             os.chdir(original_cwd)
 
+    def test_load_plugin_skip_reload_flag(self):
+        """Ensure load_plugin respects the reload flag."""
+        project_root = self.create_temp_dir()
+        hyper_dir = project_root / ".hyper"
+        plugins_dir = hyper_dir / "plugins"
+        plugins_dir.mkdir(parents=True)
+
+        plugin_dir = self.create_test_plugin(plugins_dir, "flag_test")
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(project_root)
+            reset_config()
+
+            registry = PluginRegistry()
+            registry.initialize()
+
+            # Initial load
+            assert registry.load_plugin("flag_test") is True
+            mod = registry.plugins["flag_test"]["module"]
+            assert getattr(mod, "PLUGIN_VERSION", None) == "1.0.0"
+
+            # Modify plugin version
+            plugin_file = plugin_dir / "plugin.py"
+            plugin_file.write_text(plugin_file.read_text().replace("1.0.0", "2.0.0"))
+            new_time = os.path.getmtime(plugin_file) + 2
+            os.utime(plugin_file, (new_time, new_time))
+
+            # Reload with flag=False - should skip reload
+            assert registry.load_plugin("flag_test", reload=False) is True
+            mod = registry.plugins["flag_test"]["module"]
+            assert getattr(mod, "PLUGIN_VERSION", None) == "1.0.0"
+
+            # Reload with flag=True - should update
+            assert registry.load_plugin("flag_test", reload=True) is True
+            mod = registry.plugins["flag_test"]["module"]
+            assert getattr(mod, "PLUGIN_VERSION", None) == "2.0.0"
+
+        finally:
+            os.chdir(original_cwd)
+
 
 class TestPluginLoadingErrorHandling:
     """Test error handling in plugin loading."""
