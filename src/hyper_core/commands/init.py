@@ -96,7 +96,9 @@ class InitCommand(BaseCommand):
 
     def _confirm_overwrite(self) -> bool:
         """Ask user to confirm overwriting existing .hyper directory."""
-        return self.prompt_confirm("Do you want to overwrite the existing .hyper directory?", default=False)
+        return self.prompt_confirm(
+            "Do you want to overwrite the existing .hyper directory?", default=False
+        )
 
     def _confirm_proceed(self) -> bool:
         """Ask user to confirm proceeding with initialization."""
