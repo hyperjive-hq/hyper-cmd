@@ -45,6 +45,7 @@ dev = [
 
 [project.scripts]
 hyper = "hyper_core.cli:main"
+hyper-mcp = "hyper_core.mcp_server:main"
 
 [project.urls]
 Homepage = "https://github.com/hyperjive/hyper-core"
