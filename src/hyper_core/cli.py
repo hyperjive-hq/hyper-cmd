@@ -9,6 +9,7 @@ import click
 from rich.console import Console
 
 from .commands.init import InitCommand
+from .commands.mcp_init import McpInitCommand
 from .commands.registry import CommandRegistry
 from .container.simple_container import SimpleContainer
 from .plugins.registry import plugin_registry
@@ -20,6 +21,7 @@ def discover_commands() -> CommandRegistry:
 
     # Register built-in commands first
     registry.register(InitCommand, "init")
+    registry.register(McpInitCommand, "mcp-init")
 
     # Initialize and load plugins from .hyper directory
     plugin_registry.initialize()
@@ -411,6 +413,18 @@ def init(ctx: click.Context, force: bool) -> None:
     container = SimpleContainer()
     init_command = InitCommand(container)
     exit_code = init_command.execute(force=force)
+    sys.exit(exit_code)
+
+
+@main.command(name="mcp-init")
+@click.option("--force", is_flag=True, help="Skip confirmation and overwrite existing files")
+@click.option("--config-path", type=str, help="Path to save .mcp.json file")
+@click.pass_context
+def mcp_init(ctx: click.Context, force: bool, config_path: str) -> None:
+    """Initialize MCP configuration for Hyper CLI integration."""
+    container = SimpleContainer()
+    mcp_init_command = McpInitCommand(container)
+    exit_code = mcp_init_command.execute(force=force, config_path=config_path)
     sys.exit(exit_code)
 
 

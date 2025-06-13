@@ -15,7 +15,7 @@ ui:
   theme: 'default'
   refresh_interval: 1000
 
-# Logging configuration  
+# Logging configuration
 logging:
   level: 'INFO'
   # file: 'hyper.log'  # Uncomment to log to file
