@@ -5,10 +5,11 @@ Commands are the primary way users interact with applications built on Hyper.
 """
 
 import socket
+import subprocess
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
@@ -66,6 +67,11 @@ class BaseCommand(ABC, ICommand):
         self._description = self.__class__.__doc__ or "No description available"
         self._help_text = self._description
 
+        # Output capture for MCP integration
+        # These lists store output from subprocess calls for MCP clients
+        self._captured_stdout: list[str] = []
+        self._captured_stderr: list[str] = []
+
     def _generate_default_name(self) -> str:
         """Generate a default command name from the class name."""
         class_name = self.__class__.__name__
@@ -102,18 +108,28 @@ class BaseCommand(ABC, ICommand):
         Returns:
             Exit code (0 for success, non-zero for failure)
         """
+        # Clear captured output at start of execution
+        self._captured_stdout.clear()
+        self._captured_stderr.clear()
+
         try:
             return self.execute(*args, **kwargs)
         except KeyboardInterrupt:
-            self.console.print("\n[yellow]Operation cancelled by user[/]")
+            interrupt_msg = "\nOperation cancelled by user"
+            self.console.print(f"[yellow]{interrupt_msg}[/]")
+            self._captured_stderr.append(interrupt_msg)
             return 130  # Standard exit code for SIGINT
         except Exception as e:
-            self.console.print(f"[red]Error:[/] {str(e)}")
+            error_msg = f"Error: {str(e)}"
+            self.console.print(f"[red]{error_msg}[/]")
+            self._captured_stderr.append(error_msg)
             if self.console.is_dumb_terminal:
                 # Print full traceback in non-interactive terminals
                 import traceback
 
+                tb_msg = traceback.format_exc()
                 traceback.print_exc()
+                self._captured_stderr.append(tb_msg)
             return 1
 
     # UI Helper Methods
@@ -208,6 +224,173 @@ class BaseCommand(ABC, ICommand):
     def print_info(self, message: str) -> None:
         """Print an info message in blue."""
         self.console.print(f"[blue]ℹ[/] {message}")
+
+    # Subprocess Helper Methods
+    # These methods provide a clean interface for running external processes
+    # while automatically capturing output for MCP integration
+
+    def run_subprocess(
+        self,
+        cmd: Union[str, list[str]],
+        capture_output: bool = True,
+        show_output: bool = True,
+        **kwargs,
+    ) -> subprocess.CompletedProcess:
+        """Run a subprocess with automatic output capture for MCP integration.
+
+        This method should be used instead of subprocess.run() directly to ensure
+        output is properly captured and available to MCP clients.
+
+        Args:
+            cmd: Command to run (string or list of arguments)
+            capture_output: Whether to capture stdout/stderr (default: True)
+            show_output: Whether to display output to console (default: True)
+            **kwargs: Additional arguments passed to subprocess.run()
+
+        Returns:
+            CompletedProcess result
+
+        Example:
+            result = self.run_subprocess(["ls", "-la"])
+            result = self.run_subprocess("echo 'Hello World'", shell=True)
+        """
+        # Set default subprocess options
+        subprocess_kwargs = {"capture_output": capture_output, "text": True, **kwargs}
+
+        # Run the subprocess
+        result = subprocess.run(cmd, **subprocess_kwargs)
+
+        # Capture output for MCP
+        if capture_output and result.stdout:
+            self._captured_stdout.append(result.stdout)
+            if show_output:
+                self.console.print(result.stdout.rstrip())
+
+        if capture_output and result.stderr:
+            self._captured_stderr.append(result.stderr)
+            if show_output:
+                self.console.print(f"[red]{result.stderr.rstrip()}[/]")
+
+        return result
+
+    def run_subprocess_streaming(self, cmd: Union[str, list[str]], **kwargs) -> int:
+        """Run a subprocess with real-time output streaming and capture.
+
+        This method streams output in real-time while also capturing it
+        for MCP integration. Useful for long-running processes where you
+        want to see output as it happens.
+
+        Args:
+            cmd: Command to run (string or list of arguments)
+            **kwargs: Additional arguments passed to subprocess.Popen()
+
+        Returns:
+            Exit code of the process
+
+        Example:
+            exit_code = self.run_subprocess_streaming(["python", "long_script.py"])
+        """
+        subprocess_kwargs = {
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "text": True,
+            "bufsize": 1,  # Line buffered
+            **kwargs,
+        }
+
+        stdout_lines = []
+        stderr_lines = []
+
+        with subprocess.Popen(cmd, **subprocess_kwargs) as process:
+            # Handle both stdout and stderr concurrently
+            self._stream_process_output(process, stdout_lines, stderr_lines)
+            exit_code = process.wait()
+
+        # Store captured output for MCP integration
+        self._store_captured_lines(stdout_lines, stderr_lines)
+
+        return exit_code
+
+    def _stream_process_output(
+        self, process, stdout_lines: list[str], stderr_lines: list[str]
+    ) -> None:
+        """Stream output from a process in real-time."""
+        import select
+        import sys
+
+        # For Windows compatibility, fall back to simple approach
+        if sys.platform == "win32":
+            self._stream_process_output_simple(process, stdout_lines, stderr_lines)
+            return
+
+        # Unix-like systems can use select for better concurrency
+        streams = []
+        if process.stdout:
+            streams.append(process.stdout)
+        if process.stderr:
+            streams.append(process.stderr)
+
+        while streams:
+            ready, _, _ = select.select(streams, [], [], 0.1)
+
+            for stream in ready:
+                line = stream.readline()
+                if line:
+                    line = line.rstrip()
+                    if stream == process.stdout:
+                        stdout_lines.append(line)
+                        self.console.print(line)
+                    elif stream == process.stderr:
+                        stderr_lines.append(line)
+                        self.console.print(f"[red]{line}[/]")
+                else:
+                    streams.remove(stream)
+
+            # If no streams ready and process is done, break to avoid infinite loop
+            if not ready and process.poll() is not None:
+                break
+
+    def _stream_process_output_simple(
+        self, process, stdout_lines: list[str], stderr_lines: list[str]
+    ) -> None:
+        """Simple streaming for Windows or fallback."""
+        # Read stdout
+        if process.stdout:
+            for line in iter(process.stdout.readline, ""):
+                line = line.rstrip()
+                if line:
+                    stdout_lines.append(line)
+                    self.console.print(line)
+
+        # Read stderr
+        if process.stderr:
+            for line in iter(process.stderr.readline, ""):
+                line = line.rstrip()
+                if line:
+                    stderr_lines.append(line)
+                    self.console.print(f"[red]{line}[/]")
+
+    def _store_captured_lines(self, stdout_lines: list[str], stderr_lines: list[str]) -> None:
+        """Store captured output lines for MCP integration."""
+        if stdout_lines:
+            self._captured_stdout.append("\n".join(stdout_lines))
+        if stderr_lines:
+            self._captured_stderr.append("\n".join(stderr_lines))
+
+    def get_captured_output(self) -> tuple[str, str]:
+        """Get all captured stdout and stderr from subprocess calls.
+
+        Returns:
+            Tuple of (stdout, stderr) strings
+        """
+        stdout = "\n".join(self._captured_stdout) if self._captured_stdout else ""
+        stderr = "\n".join(self._captured_stderr) if self._captured_stderr else ""
+        return stdout, stderr
+
+    def clear_captured_output(self) -> None:
+        """Clear all captured output."""
+        self._captured_stdout.clear()
+        self._captured_stderr.clear()
 
     # Validation Helper Methods
 
