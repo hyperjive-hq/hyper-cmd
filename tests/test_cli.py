@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from click.testing import CliRunner
 
-from hyper_core.cli import discover_commands, main
-from hyper_core.commands.base import BaseCommand
+from hyper_cmd.cli import discover_commands, main
+from hyper_cmd.commands.base import BaseCommand
 
 
 class TestCommandForCLI(BaseCommand):
@@ -36,7 +36,7 @@ class TestCLI:
 
     def test_cli_main_without_commands(self):
         """Test CLI main function without any commands."""
-        with patch("hyper_core.cli.discover_commands") as mock_discover:
+        with patch("hyper_cmd.cli.discover_commands") as mock_discover:
             mock_registry = MagicMock()
             mock_registry.list_commands.return_value = []
             mock_discover.return_value = mock_registry
@@ -49,7 +49,7 @@ class TestCLI:
 
     def test_cli_main_with_commands(self):
         """Test CLI main function with discovered commands."""
-        with patch("hyper_core.cli.discover_commands") as mock_discover:
+        with patch("hyper_cmd.cli.discover_commands") as mock_discover:
             mock_registry = MagicMock()
             mock_registry.list_commands.return_value = ["test"]
             mock_registry.get.return_value = TestCommandForCLI
@@ -63,7 +63,7 @@ class TestCLI:
 
     def test_cli_ui_flag(self):
         """Test CLI with --ui flag."""
-        with patch("hyper_core.cli.launch_ui") as mock_launch_ui:
+        with patch("hyper_cmd.cli.launch_ui") as mock_launch_ui:
             result = self.runner.invoke(main, ["--ui"])
 
             assert result.exit_code == 0
@@ -74,7 +74,7 @@ class TestCLI:
         registry = discover_commands()
 
         # Should return a CommandRegistry, not PluginRegistry
-        from hyper_core.commands.registry import CommandRegistry
+        from hyper_cmd.commands.registry import CommandRegistry
 
         assert isinstance(registry, CommandRegistry)
         assert hasattr(registry, "list_commands")
@@ -95,7 +95,7 @@ class TestCLI:
 PLUGIN_NAME = "test_plugin"
 PLUGIN_VERSION = "1.0.0"
 
-from hyper_core.commands.base import BaseCommand
+from hyper_cmd.commands.base import BaseCommand
 
 class TestPluginCommand(BaseCommand):
     @property
@@ -116,7 +116,7 @@ def register_commands(registry):
             (plugin_dir / "plugin.py").write_text(plugin_content)
 
             # Test discovery with custom plugin path
-            from hyper_core.commands.registry import CommandRegistry
+            from hyper_cmd.commands.registry import CommandRegistry
 
             registry = discover_commands()
             # Should work without errors even if no plugins found
@@ -131,13 +131,13 @@ class TestCLIIntegration:
         runner = CliRunner()
 
         # Register a test command directly
-        from hyper_core.commands.registry import CommandRegistry
+        from hyper_cmd.commands.registry import CommandRegistry
 
         registry = CommandRegistry()
         registry.register(TestCommandForCLI)
 
         # Mock the discover_commands to return our test registry
-        with patch("hyper_core.cli.discover_commands", return_value=registry):
+        with patch("hyper_cmd.cli.discover_commands", return_value=registry):
             result = runner.invoke(main, [])
 
             assert result.exit_code == 0
@@ -155,7 +155,7 @@ class TestCLIIntegration:
     def test_cli_error_handling(self):
         """Test CLI error handling."""
         # Test that CLI handles launch_ui properly
-        with patch("hyper_core.cli.launch_ui") as mock_launch_ui:
+        with patch("hyper_cmd.cli.launch_ui") as mock_launch_ui:
             runner = CliRunner()
             result = runner.invoke(main, ["--ui"])
 
@@ -169,25 +169,25 @@ class TestLaunchUI:
 
     def test_launch_ui_import_error(self):
         """Test UI launch with missing dependencies."""
-        from hyper_core.cli import launch_ui
+        from hyper_cmd.cli import launch_ui
 
         # Mock the import to fail inside the try block
         with patch(
-            "hyper_core.ui.framework.NCursesFramework", side_effect=ImportError("No ncurses")
+            "hyper_cmd.ui.framework.NCursesFramework", side_effect=ImportError("No ncurses")
         ):
             with pytest.raises(SystemExit):
                 launch_ui()
 
     def test_launch_ui_success(self):
         """Test successful UI launch."""
-        from hyper_core.cli import launch_ui
+        from hyper_cmd.cli import launch_ui
 
         # Mock the framework and its methods
         mock_framework = MagicMock()
 
-        with patch("hyper_core.ui.framework.NCursesFramework", return_value=mock_framework):
-            with patch("hyper_core.ui.framework.LayoutConfig"):
-                with patch("hyper_core.ui.framework.MenuItem"):
+        with patch("hyper_cmd.ui.framework.NCursesFramework", return_value=mock_framework):
+            with patch("hyper_cmd.ui.framework.LayoutConfig"):
+                with patch("hyper_cmd.ui.framework.MenuItem"):
                     # Should not raise any errors
                     launch_ui()
 

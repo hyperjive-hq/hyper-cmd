@@ -7,7 +7,7 @@ dependency-injector library.
 Example:
     Basic usage of SimpleContainer::
 
-        from hyper_core.container import SimpleContainer
+        from hyper_cmd.container import SimpleContainer
         from rich.console import Console
 
         # Create container

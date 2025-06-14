@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from rich.console import Console
 
-from hyper_core import (
+from hyper_cmd import (
     BaseCommand,
     BaseWidget,
     PluginMetadata,
@@ -17,7 +17,7 @@ from hyper_core import (
     ThemeManager,
     WidgetSize,
 )
-from hyper_core.ui import ContentPanel, LayoutConfig, MenuItem, NCursesFramework
+from hyper_cmd.ui import ContentPanel, LayoutConfig, MenuItem, NCursesFramework
 
 
 class ExampleWidget(BaseWidget):
@@ -167,7 +167,7 @@ class ExampleCommand(BaseCommand):
             self.print_info(f"Running example command with count={count}")
 
             for i in range(count):
-                self.console.print(f"{i + 1}. {message} from hyper-core!")
+                self.console.print(f"{i + 1}. {message} from hyper-cmd!")
 
             self.print_success("Example command completed successfully")
             return 0
@@ -291,7 +291,7 @@ class TestRealFrameworkUsage:
         manager.register_theme(custom_theme)
 
         # Test theme switching
-        from hyper_core.ui.renderer import MockBackend
+        from hyper_cmd.ui.renderer import MockBackend
 
         mock_backend = MockBackend()
         manager.set_theme("custom", mock_backend)
@@ -490,7 +490,7 @@ class TestFrameworkIntegration:
 
         # Register and apply theme
         theme_manager.register_theme(custom_theme)
-        from hyper_core.ui.renderer import MockBackend
+        from hyper_cmd.ui.renderer import MockBackend
 
         mock_backend = MockBackend()
         theme_manager.set_theme("custom", mock_backend)

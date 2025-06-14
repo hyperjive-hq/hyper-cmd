@@ -1,4 +1,4 @@
-"""Hello World Plugin - A comprehensive example for Hyper Core.
+"""Hello World Plugin - A comprehensive example for Hyper CMD.
 
 This plugin demonstrates:
 - Command creation with arguments and validation
@@ -8,7 +8,7 @@ This plugin demonstrates:
 - Error handling and logging
 - Documentation best practices
 
-Author: Hyper Core Framework
+Author: Hyper CMD Framework
 Version: 1.0.0
 """
 
@@ -17,15 +17,15 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from hyper_core.commands import BaseCommand
-from hyper_core.protocols import IService, IWidget
-from hyper_core.ui import BaseWidget, WidgetSize
+from hyper_cmd.commands import BaseCommand
+from hyper_cmd.protocols import IService, IWidget
+from hyper_cmd.ui import BaseWidget, WidgetSize
 
 # Plugin metadata - these constants are automatically detected by the framework
 PLUGIN_NAME = "hello_world"
 PLUGIN_VERSION = "1.0.0"
-PLUGIN_DESCRIPTION = "Hello World example plugin demonstrating Hyper Core capabilities"
-PLUGIN_AUTHOR = "Hyper Core Framework"
+PLUGIN_DESCRIPTION = "Hello World example plugin demonstrating Hyper CMD capabilities"
+PLUGIN_AUTHOR = "Hyper CMD Framework"
 PLUGIN_DEPENDENCIES = []  # List any Python package dependencies here
 
 # Set up plugin logger

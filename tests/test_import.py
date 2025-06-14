@@ -2,14 +2,14 @@
 
 
 def test_can_import_package():
-    import hyper_core
+    import hyper_cmd
 
-    assert hyper_core.__version__ == "0.1.0"
+    assert hyper_cmd.__version__ == "0.1.0"
 
 
 def test_can_import_main_classes():
-    from hyper_core import BaseCommand, BaseWidget, SimpleContainer
-    from hyper_core.plugins import plugin_registry
+    from hyper_cmd import BaseCommand, BaseWidget, SimpleContainer
+    from hyper_cmd.plugins import plugin_registry
 
     assert BaseCommand is not None
     assert SimpleContainer is not None

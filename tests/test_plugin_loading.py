@@ -5,9 +5,9 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from hyper_core import BaseCommand
-from hyper_core.config import HyperConfig, reset_config
-from hyper_core.plugins import PluginLoader, PluginRegistry
+from hyper_cmd import BaseCommand
+from hyper_cmd.config import HyperConfig, reset_config
+from hyper_cmd.plugins import PluginLoader, PluginRegistry
 
 
 class TestPluginCommand(BaseCommand):
@@ -67,7 +67,7 @@ PLUGIN_NAME = "{plugin_name}"
 PLUGIN_VERSION = "1.0.0"
 PLUGIN_DESCRIPTION = "Test plugin for loading tests"
 
-from hyper_core import BaseCommand
+from hyper_cmd import BaseCommand
 
 class {plugin_name.title().replace("_", "")}Command(BaseCommand):
     @property
@@ -530,7 +530,7 @@ PLUGIN_NAME = "{plugin_name}"
 PLUGIN_VERSION = "1.0.0"
 PLUGIN_DESCRIPTION = "Test plugin for reload tests"
 
-from hyper_core import BaseCommand
+from hyper_cmd import BaseCommand
 
 class {plugin_name.title().replace("_", "")}Command(BaseCommand):
     @property

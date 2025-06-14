@@ -557,6 +557,7 @@ class MCPServer:
     def _route_request(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         """Route request to appropriate handler method."""
         handlers = {
+            "initialize": lambda p: self._handle_initialize(p),
             "tools/list": lambda p: {"tools": self.get_tools()},
             "tools/call": lambda p: self.execute_tool(p.get("name"), p.get("arguments", {})),
             "resources/list": lambda p: {"resources": self.get_resources()},
@@ -568,6 +569,14 @@ class MCPServer:
             return {"error": {"code": -32601, "message": f"Method not found: {method}"}}
 
         return handler(params)
+
+    def _handle_initialize(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Handle MCP initialization request."""
+        return {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {"tools": {}, "resources": {}},
+            "serverInfo": {"name": "hyper-cmd", "version": "0.1.0"},
+        }
 
     def run_server(self) -> None:
         """Run the MCP server (stdio mode)."""

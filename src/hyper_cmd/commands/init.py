@@ -201,9 +201,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from hyper_core.commands import BaseCommand
-from hyper_core.protocols import IService, IWidget
-from hyper_core.ui import BaseWidget, WidgetSize
+from hyper_cmd.commands import BaseCommand
+from hyper_cmd.protocols import IService, IWidget
+from hyper_cmd.ui import BaseWidget, WidgetSize
 
 # Plugin metadata - these constants are automatically detected by the framework
 PLUGIN_NAME = "hello_world"

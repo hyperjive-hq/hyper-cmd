@@ -1,4 +1,4 @@
-# Hyper Core
+# Hyper CMD
 
 A pluggable CLI framework for building terminal applications with ncurses UI support.
 
@@ -13,7 +13,7 @@ A pluggable CLI framework for building terminal applications with ncurses UI sup
 ## Installation
 
 ```bash
-pip install hyper-core
+pip install hyper-cmd
 ```
 
 ## Quick Start

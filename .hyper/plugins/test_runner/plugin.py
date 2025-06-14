@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
-from hyper_core.commands import BaseCommand
+from hyper_cmd.commands import BaseCommand
 
 PLUGIN_NAME = "test_runner"
 PLUGIN_VERSION = "1.0.0"
@@ -286,7 +286,7 @@ Examples:
         
         # Add coverage
         if coverage:
-            cmd.extend(["--cov=src/hyper_core", "--cov-report=term-missing"])
+            cmd.extend(["--cov=src/hyper_cmd", "--cov-report=term-missing"])
         
         # Add specific file or default to tests directory
         if file:

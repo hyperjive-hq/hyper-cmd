@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 from rich.console import Console
 
-from hyper_core.container import SimpleContainer, create_container
+from hyper_cmd.container import SimpleContainer, create_container
 
 
 # Example Services for Testing
@@ -361,7 +361,7 @@ class TestContainerIntegration:
 
     def test_container_with_commands(self):
         """Test container integration with command system."""
-        from hyper_core import BaseCommand
+        from hyper_cmd import BaseCommand
 
         class UserCommand(BaseCommand):
             @property
@@ -436,7 +436,7 @@ class TestContainerIntegration:
 
         # Test that it can be configured
         console = Console()
-        from hyper_core.container import configure_container
+        from hyper_cmd.container import configure_container
 
         configure_container(container, console=console)
 
