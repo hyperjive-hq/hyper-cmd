@@ -1,4 +1,4 @@
-"""Comprehensive tests for mcp-init command functionality."""
+"""Comprehensive tests for init-mcp command functionality."""
 
 import json
 import tempfile
@@ -55,6 +55,97 @@ class TestMCPConfigGenerator:
                 content = f.read()
             assert content.endswith("\n")
 
+    def test_read_config_nonexistent_file(self):
+        """Test reading config from nonexistent file."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = Path(tmp_dir) / ".mcp.json"
+
+            result = MCPConfigGenerator.read_config(config_file)
+
+            assert result == {}
+
+    def test_read_config_existing_file(self):
+        """Test reading config from existing file."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = Path(tmp_dir) / ".mcp.json"
+            test_config = {"mcpServers": {"test": {"command": "test"}}}
+
+            with open(config_file, "w") as f:
+                json.dump(test_config, f)
+
+            result = MCPConfigGenerator.read_config(config_file)
+
+            assert result == test_config
+
+    def test_read_config_invalid_json(self):
+        """Test reading config from file with invalid JSON."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = Path(tmp_dir) / ".mcp.json"
+            config_file.write_text("invalid json")
+
+            with pytest.raises(ValueError, match="Failed to read existing config"):
+                MCPConfigGenerator.read_config(config_file)
+
+    def test_merge_config_empty_existing(self):
+        """Test merging with empty existing config."""
+        existing_config = {}
+        new_config = MCPConfigGenerator.generate_config()
+
+        result = MCPConfigGenerator.merge_config(existing_config, new_config)
+
+        assert result == new_config
+
+    def test_merge_config_with_other_servers(self):
+        """Test merging config with other existing servers."""
+        existing_config = {
+            "mcpServers": {"other-server": {"command": "other", "args": []}},
+            "version": "0.9",
+        }
+        new_config = MCPConfigGenerator.generate_config()
+
+        result = MCPConfigGenerator.merge_config(existing_config, new_config)
+
+        # Should have both servers
+        assert "other-server" in result["mcpServers"]
+        assert "hyper-core" in result["mcpServers"]
+        # Should update version
+        assert result["version"] == "1.0"
+        # Should update schema
+        assert result["$schema"] == MCPConfigGenerator.MCP_SCHEMA_URL
+
+    def test_merge_config_update_existing_hyper_core(self):
+        """Test merging config that updates existing hyper-core server."""
+        existing_config = {
+            "mcpServers": {
+                "hyper-core": {"command": "old-command", "args": ["old"]},
+                "other-server": {"command": "other", "args": []},
+            }
+        }
+        new_config = MCPConfigGenerator.generate_config()
+
+        result = MCPConfigGenerator.merge_config(existing_config, new_config)
+
+        # Should update hyper-core server
+        assert result["mcpServers"]["hyper-core"]["command"] == "hyper-mcp"
+        assert result["mcpServers"]["hyper-core"]["args"] == []
+        # Should keep other server
+        assert "other-server" in result["mcpServers"]
+
+    def test_show_merge_preview(self):
+        """Test merge preview display."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            config_file = Path(tmp_dir) / ".mcp.json"
+
+            existing_config = {"mcpServers": {"other-server": {"command": "other"}}}
+            new_config = MCPConfigGenerator.generate_config()
+            merged_config = MCPConfigGenerator.merge_config(existing_config, new_config)
+
+            # Create a command instance for testing
+            command = McpInitCommand()
+
+            # Should not raise an exception
+            command._show_merge_preview(existing_config, merged_config, config_file)
+
 
 class TestMCPToolDetector:
     """Test the MCP tool detector."""
@@ -100,7 +191,7 @@ class TestMCPToolDetector:
 
 
 class TestMcpInitCommand:
-    """Test the mcp-init command."""
+    """Test the init-mcp command."""
 
     def setup_method(self):
         """Set up test fixtures."""
@@ -109,17 +200,17 @@ class TestMcpInitCommand:
 
     def test_initialization(self):
         """Test command initialization."""
-        assert self.command.name == "mcp-init"
+        assert self.command.name == "init-mcp"
         assert "MCP" in self.command.description
         assert self.command.config_generator is not None
         assert self.command.tool_detector is not None
 
     def test_properties(self):
         """Test command properties."""
-        assert self.command.name == "mcp-init"
+        assert self.command.name == "init-mcp"
         assert isinstance(self.command.description, str)
         assert isinstance(self.command.help_text, str)
-        assert "mcp-init" in self.command.help_text
+        assert "init-mcp" in self.command.help_text
 
     def test_execute_success_force(self):
         """Test successful execution with force flag."""
@@ -188,42 +279,45 @@ class TestMcpInitCommand:
 
         assert config_file is None
 
-    def test_handle_existing_file_no_file(self):
-        """Test handling when no existing file."""
+    def test_determine_merge_strategy_no_file(self):
+        """Test merge strategy when no existing file."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_file = Path(tmp_dir) / ".mcp.json"
 
-            result = self.command._handle_existing_file(config_file, force=False)
+            result = self.command._determine_merge_strategy(config_file, force=False)
 
-            assert result is True
+            assert result == "overwrite"
 
-    def test_handle_existing_file_with_force(self):
-        """Test handling existing file with force flag."""
+    def test_determine_merge_strategy_with_force(self):
+        """Test merge strategy with force flag."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_file = Path(tmp_dir) / ".mcp.json"
-            config_file.write_text('{"existing": true}')
+            config_file.write_text('{"mcpServers": {"other": {}}}')
 
-            result = self.command._handle_existing_file(config_file, force=True)
+            result = self.command._determine_merge_strategy(config_file, force=True)
 
-            assert result is True
+            assert result == "overwrite"
 
-    def test_handle_existing_file_without_force(self):
-        """Test handling existing file without force flag."""
+    def test_determine_merge_strategy_with_other_servers(self):
+        """Test merge strategy when other servers exist."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             config_file = Path(tmp_dir) / ".mcp.json"
-            config_file.write_text('{"existing": true}')
+            config_file.write_text('{"mcpServers": {"other-server": {"command": "other"}}}')
 
-            # Mock user input to decline
-            with patch("builtins.input", return_value="n"):
-                result = self.command._handle_existing_file(config_file, force=False)
+            # Mock user input to select merge
+            with patch("builtins.input", return_value="1"):
+                result = self.command._determine_merge_strategy(config_file, force=False)
+                assert result == "merge"
 
-                assert result is False
+            # Mock user input to select overwrite
+            with patch("builtins.input", return_value="2"):
+                result = self.command._determine_merge_strategy(config_file, force=False)
+                assert result == "overwrite"
 
-            # Mock user input to accept
-            with patch("builtins.input", return_value="y"):
-                result = self.command._handle_existing_file(config_file, force=False)
-
-                assert result is True
+            # Mock user input to cancel
+            with patch("builtins.input", return_value="3"):
+                result = self.command._determine_merge_strategy(config_file, force=False)
+                assert result is None
 
     def test_show_config_preview(self):
         """Test configuration preview display."""
@@ -257,35 +351,35 @@ class TestMcpInitCommand:
         with pytest.raises(RuntimeError):
             self.command._write_config_file(config_file, config)
 
-    def test_confirm_overwrite_accept(self):
-        """Test overwrite confirmation - accept."""
+    def test_confirm_overwrite_strategy_accept(self):
+        """Test overwrite strategy confirmation - accept."""
         with patch("builtins.input", return_value="y"):
-            result = self.command._confirm_overwrite()
-            assert result is True
+            result = self.command._confirm_overwrite_strategy()
+            assert result == "overwrite"
 
         with patch("builtins.input", return_value="yes"):
-            result = self.command._confirm_overwrite()
-            assert result is True
+            result = self.command._confirm_overwrite_strategy()
+            assert result == "overwrite"
 
-    def test_confirm_overwrite_decline(self):
-        """Test overwrite confirmation - decline."""
+    def test_confirm_overwrite_strategy_decline(self):
+        """Test overwrite strategy confirmation - decline."""
         with patch("builtins.input", return_value="n"):
-            result = self.command._confirm_overwrite()
-            assert result is False
+            result = self.command._confirm_overwrite_strategy()
+            assert result is None
 
         with patch("builtins.input", return_value=""):
-            result = self.command._confirm_overwrite()
-            assert result is False
+            result = self.command._confirm_overwrite_strategy()
+            assert result is None
 
-    def test_confirm_overwrite_interrupt(self):
-        """Test overwrite confirmation with interrupt."""
+    def test_confirm_overwrite_strategy_interrupt(self):
+        """Test overwrite strategy confirmation with interrupt."""
         with patch("builtins.input", side_effect=KeyboardInterrupt()):
-            result = self.command._confirm_overwrite()
-            assert result is False
+            result = self.command._confirm_overwrite_strategy()
+            assert result is None
 
         with patch("builtins.input", side_effect=EOFError()):
-            result = self.command._confirm_overwrite()
-            assert result is False
+            result = self.command._confirm_overwrite_strategy()
+            assert result is None
 
     def test_confirm_proceed_accept(self):
         """Test proceed confirmation - accept."""
@@ -395,31 +489,31 @@ class TestMCPInitIntegration:
     """Integration tests for mcp-init command."""
 
     def test_command_available_in_registry(self):
-        """Test that mcp-init command is properly registered."""
+        """Test that init-mcp command is properly registered."""
         from hyper_core.cli import discover_commands
 
         registry = discover_commands()
         commands = registry.list_commands()
 
-        assert "mcp-init" in commands
+        assert "init-mcp" in commands
 
         # Test command can be retrieved and instantiated
-        cmd_class = registry.get("mcp-init")
+        cmd_class = registry.get("init-mcp")
         assert cmd_class is not None
 
         container = SimpleContainer()
         instance = cmd_class(container)
-        assert instance.name == "mcp-init"
+        assert instance.name == "init-mcp"
 
     def test_command_available_via_mcp(self):
-        """Test that mcp-init command is available via MCP server."""
+        """Test that init-mcp command is available via MCP server."""
         from hyper_core.mcp_server import MCPServer
 
         server = MCPServer()
         tools = server.get_tools()
 
-        # Should find mcp-init tool
-        mcp_init_tools = [tool for tool in tools if tool["name"] == "hyper_mcp-init"]
+        # Should find init-mcp tool
+        mcp_init_tools = [tool for tool in tools if tool["name"] == "hyper_init-mcp"]
         assert len(mcp_init_tools) == 1
 
         tool = mcp_init_tools[0]
@@ -431,7 +525,7 @@ class TestMCPInitIntegration:
         from hyper_core.mcp_server import MCPServer
 
         with tempfile.TemporaryDirectory() as tmp_dir:
-            # 1. Execute mcp-init via MCP server
+            # 1. Execute init-mcp via MCP server
             server = MCPServer()
 
             request = {
@@ -439,7 +533,7 @@ class TestMCPInitIntegration:
                 "id": 1,
                 "method": "tools/call",
                 "params": {
-                    "name": "hyper_mcp-init",
+                    "name": "hyper_init-mcp",
                     "arguments": {"force": True, "config_path": tmp_dir},
                 },
             }
