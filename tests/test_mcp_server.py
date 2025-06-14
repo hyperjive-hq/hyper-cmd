@@ -237,7 +237,10 @@ class TestMCPCommandExecutor:
 
         assert "isError" in result
         assert result["isError"] is True
-        assert any("Error: Command failed" in content["text"] or "failed with exit code" in content["text"] for content in result["content"])
+        assert any(
+            "Error: Command failed" in content["text"] or "failed with exit code" in content["text"]
+            for content in result["content"]
+        )
 
 
 class TestMCPServer:

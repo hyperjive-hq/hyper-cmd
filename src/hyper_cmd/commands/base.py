@@ -126,6 +126,7 @@ class BaseCommand(ABC, ICommand):
             if self.console.is_dumb_terminal:
                 # Print full traceback in non-interactive terminals
                 import traceback
+
                 tb_msg = traceback.format_exc()
                 traceback.print_exc()
                 self._captured_stderr.append(tb_msg)
@@ -233,7 +234,7 @@ class BaseCommand(ABC, ICommand):
         cmd: Union[str, list[str]],
         capture_output: bool = True,
         show_output: bool = True,
-        **kwargs
+        **kwargs,
     ) -> subprocess.CompletedProcess:
         """Run a subprocess with automatic output capture for MCP integration.
 
@@ -254,11 +255,7 @@ class BaseCommand(ABC, ICommand):
             result = self.run_subprocess("echo 'Hello World'", shell=True)
         """
         # Set default subprocess options
-        subprocess_kwargs = {
-            "capture_output": capture_output,
-            "text": True,
-            **kwargs
-        }
+        subprocess_kwargs = {"capture_output": capture_output, "text": True, **kwargs}
 
         # Run the subprocess
         result = subprocess.run(cmd, **subprocess_kwargs)
@@ -276,11 +273,7 @@ class BaseCommand(ABC, ICommand):
 
         return result
 
-    def run_subprocess_streaming(
-        self,
-        cmd: Union[str, list[str]],
-        **kwargs
-    ) -> int:
+    def run_subprocess_streaming(self, cmd: Union[str, list[str]], **kwargs) -> int:
         """Run a subprocess with real-time output streaming and capture.
 
         This method streams output in real-time while also capturing it
@@ -302,7 +295,7 @@ class BaseCommand(ABC, ICommand):
             "stderr": subprocess.PIPE,
             "text": True,
             "bufsize": 1,  # Line buffered
-            **kwargs
+            **kwargs,
         }
 
         stdout_lines = []
@@ -318,7 +311,9 @@ class BaseCommand(ABC, ICommand):
 
         return exit_code
 
-    def _stream_process_output(self, process, stdout_lines: list[str], stderr_lines: list[str]) -> None:
+    def _stream_process_output(
+        self, process, stdout_lines: list[str], stderr_lines: list[str]
+    ) -> None:
         """Stream output from a process in real-time."""
         import select
         import sys
@@ -351,11 +346,13 @@ class BaseCommand(ABC, ICommand):
                 else:
                     streams.remove(stream)
 
-    def _stream_process_output_simple(self, process, stdout_lines: list[str], stderr_lines: list[str]) -> None:
+    def _stream_process_output_simple(
+        self, process, stdout_lines: list[str], stderr_lines: list[str]
+    ) -> None:
         """Simple streaming for Windows or fallback."""
         # Read stdout
         if process.stdout:
-            for line in iter(process.stdout.readline, ''):
+            for line in iter(process.stdout.readline, ""):
                 line = line.rstrip()
                 if line:
                     stdout_lines.append(line)
@@ -363,7 +360,7 @@ class BaseCommand(ABC, ICommand):
 
         # Read stderr
         if process.stderr:
-            for line in iter(process.stderr.readline, ''):
+            for line in iter(process.stderr.readline, ""):
                 line = line.rstrip()
                 if line:
                     stderr_lines.append(line)
@@ -372,9 +369,9 @@ class BaseCommand(ABC, ICommand):
     def _store_captured_lines(self, stdout_lines: list[str], stderr_lines: list[str]) -> None:
         """Store captured output lines for MCP integration."""
         if stdout_lines:
-            self._captured_stdout.append('\n'.join(stdout_lines))
+            self._captured_stdout.append("\n".join(stdout_lines))
         if stderr_lines:
-            self._captured_stderr.append('\n'.join(stderr_lines))
+            self._captured_stderr.append("\n".join(stderr_lines))
 
     def get_captured_output(self) -> tuple[str, str]:
         """Get all captured stdout and stderr from subprocess calls.
@@ -382,8 +379,8 @@ class BaseCommand(ABC, ICommand):
         Returns:
             Tuple of (stdout, stderr) strings
         """
-        stdout = '\n'.join(self._captured_stdout) if self._captured_stdout else ""
-        stderr = '\n'.join(self._captured_stderr) if self._captured_stderr else ""
+        stdout = "\n".join(self._captured_stdout) if self._captured_stdout else ""
+        stderr = "\n".join(self._captured_stderr) if self._captured_stderr else ""
         return stdout, stderr
 
     def clear_captured_output(self) -> None:

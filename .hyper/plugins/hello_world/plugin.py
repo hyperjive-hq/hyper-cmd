@@ -14,11 +14,10 @@ Version: 1.0.0
 
 import logging
 import time
-from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from hyper_cmd.commands import BaseCommand
-from hyper_cmd.protocols import IService, IWidget
+from hyper_cmd.protocols import IService
 from hyper_cmd.ui import BaseWidget, WidgetSize
 
 # Plugin metadata - these constants are automatically detected by the framework
@@ -231,7 +230,7 @@ class HelloService(IService):
     def __init__(self):
         """Initialize the hello service."""
         self._initialized = False
-        self._config: Dict[str, Any] = {}
+        self._config: dict[str, Any] = {}
         self._greeting_count = 0
         self._last_greeting_time: Optional[float] = None
 
@@ -243,7 +242,7 @@ class HelloService(IService):
     def is_initialized(self) -> bool:
         return self._initialized
 
-    def initialize(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def initialize(self, config: Optional[dict[str, Any]] = None) -> None:
         """Initialize the service with optional configuration.
 
         Args:
@@ -270,7 +269,7 @@ class HelloService(IService):
         self._greeting_count = 0
         self._last_greeting_time = None
 
-    def health_check(self) -> Dict[str, Any]:
+    def health_check(self) -> dict[str, Any]:
         """Perform a health check on the service.
 
         Returns:
@@ -285,7 +284,7 @@ class HelloService(IService):
             'uptime_seconds': time.time() - (self._last_greeting_time or time.time()) if self._last_greeting_time else 0
         }
 
-    def get_status(self) -> Dict[str, Any]:
+    def get_status(self) -> dict[str, Any]:
         """Get detailed service status.
 
         Returns:
@@ -336,7 +335,7 @@ class HelloService(IService):
 
 
 # Plugin registration function (optional)
-def register_plugin(container) -> Dict[str, Any]:
+def register_plugin(container) -> dict[str, Any]:
     """Register plugin components with the dependency injection container.
 
     This function is called by the framework when the plugin is loaded.
