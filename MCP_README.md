@@ -19,7 +19,7 @@ The MCP server is included with Hyper Core and can be set up easily:
 pip install -e .
 
 # 2. Generate MCP configuration automatically
-hyper mcp-init
+hyper init-mcp
 
 # 3. Run the MCP server
 hyper-mcp
@@ -27,17 +27,17 @@ hyper-mcp
 
 ### Automatic Configuration Generation
 
-The `hyper mcp-init` command creates a `.mcp.json` file with the correct configuration:
+The `hyper init-mcp` command creates a `.mcp.json` file with the correct configuration:
 
 ```bash
 # Generate .mcp.json in current directory
-hyper mcp-init
+hyper init-mcp
 
 # Force overwrite existing config
-hyper mcp-init --force
+hyper init-mcp --force
 
 # Save to specific location
-hyper mcp-init --config-path /path/to/directory
+hyper init-mcp --config-path /path/to/directory
 ```
 
 ## Configuration
@@ -47,7 +47,7 @@ hyper mcp-init --config-path /path/to/directory
 **Easy way:** Use the built-in command to generate configuration automatically:
 
 ```bash
-hyper mcp-init
+hyper init-mcp
 ```
 
 **Manual way:** Add the following to your MCP client configuration (e.g., Claude Code, etc.):
@@ -67,7 +67,7 @@ hyper mcp-init
 
 ### Example Configuration Files
 
-The `hyper mcp-init` command generates a complete `.mcp.json` file. A sample is also provided at `mcp-config.json`:
+The `hyper init-mcp` command generates a complete `.mcp.json` file. A sample is also provided at `mcp-config.json`:
 
 ```json
 {
@@ -89,7 +89,7 @@ The MCP server automatically discovers and exposes all **non-interactive** Hyper
 Each tool follows the naming convention `hyper_<command_name>`. For example:
 
 - `hyper_init` - Initialize a new Hyper project (automatically uses --force flag)
-- `hyper_mcp-init` - **Generate MCP configuration for AI integration** 
+- `hyper_init-mcp` - **Generate MCP configuration for AI integration** 
 - `hyper_hello` - Example command from plugins  
 - `hyper_test` - Run project tests
 - `hyper_testinfo` - Show test environment information
