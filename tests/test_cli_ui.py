@@ -9,11 +9,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from hyper_core.cli import show_commands_panel, show_plugins_panel
-from hyper_core.commands.base import BaseCommand
-from hyper_core.commands.registry import CommandRegistry
-from hyper_core.ui.engine import RenderContext, RenderEngine
-from hyper_core.ui.renderer import MockBackend
+from hyper_cmd.cli import show_commands_panel, show_plugins_panel
+from hyper_cmd.commands.base import BaseCommand
+from hyper_cmd.commands.registry import CommandRegistry
+from hyper_cmd.ui.engine import RenderContext, RenderEngine
+from hyper_cmd.ui.renderer import MockBackend
 
 
 class TestCommand(BaseCommand):
@@ -39,7 +39,7 @@ class TestCommandsPanel:
         framework.set_panel = Mock()
 
         # Mock empty registry
-        with patch("hyper_core.cli.discover_commands") as mock_discover:
+        with patch("hyper_cmd.cli.discover_commands") as mock_discover:
             mock_registry = CommandRegistry()
             mock_discover.return_value = mock_registry
 
@@ -70,7 +70,7 @@ class TestCommandsPanel:
         framework.set_panel = Mock()
 
         # Mock registry with test command
-        with patch("hyper_core.cli.discover_commands") as mock_discover:
+        with patch("hyper_cmd.cli.discover_commands") as mock_discover:
             mock_registry = CommandRegistry()
             mock_registry.register(TestCommand)
             mock_discover.return_value = mock_registry
@@ -111,7 +111,7 @@ class TestCommandsPanel:
         framework.set_panel = Mock()
 
         # Mock registry with broken command
-        with patch("hyper_core.cli.discover_commands") as mock_discover:
+        with patch("hyper_cmd.cli.discover_commands") as mock_discover:
             mock_registry = CommandRegistry()
             mock_registry.register(BrokenCommand)
             mock_discover.return_value = mock_registry
@@ -144,7 +144,7 @@ class TestPluginsPanel:
         framework.set_panel = Mock()
 
         # Mock empty plugin registry
-        from hyper_core.plugins.registry import plugin_registry
+        from hyper_cmd.plugins.registry import plugin_registry
 
         with patch.object(plugin_registry, "_plugins", {}):
             # Show panel
@@ -180,7 +180,7 @@ class TestPluginsPanel:
         plugin2.__name__ = "test_plugin_2"
 
         # Mock plugin registry with plugins
-        from hyper_core.plugins.registry import PluginMetadata, plugin_registry
+        from hyper_cmd.plugins.registry import PluginMetadata, plugin_registry
 
         # Create mock plugin metadata objects
         metadata1 = PluginMetadata("test_plugin_1", "1.0.0")
@@ -221,9 +221,9 @@ class TestCLIUIIntegration:
         # but we can test that it handles import errors gracefully
 
         with patch(
-            "hyper_core.ui.framework.NCursesFramework", side_effect=ImportError("test error")
+            "hyper_cmd.ui.framework.NCursesFramework", side_effect=ImportError("test error")
         ):
-            from hyper_core.cli import launch_ui
+            from hyper_cmd.cli import launch_ui
 
             with pytest.raises(SystemExit) as exc_info:
                 launch_ui()
@@ -320,7 +320,7 @@ class TestCLIUIErrorCases:
         framework = Mock()
         framework.set_panel = Mock()
 
-        with patch("hyper_core.cli.discover_commands") as mock_discover:
+        with patch("hyper_cmd.cli.discover_commands") as mock_discover:
             mock_registry = CommandRegistry()
             mock_registry.register(LongNameCommand)
             mock_discover.return_value = mock_registry

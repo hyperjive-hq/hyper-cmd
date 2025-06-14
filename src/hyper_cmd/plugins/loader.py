@@ -16,7 +16,7 @@ Example Plugin:
     PLUGIN_VERSION = "1.0.0"
     PLUGIN_DESCRIPTION = "My awesome plugin"
 
-    from hyper_core.commands import BaseCommand
+    from hyper_cmd.commands import BaseCommand
 
     class MyCommand(BaseCommand):
         @property

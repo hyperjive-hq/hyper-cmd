@@ -5,9 +5,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from hyper_core.commands.base import BaseCommand
-from hyper_core.container.simple_container import SimpleContainer
-from hyper_core.mcp_server import (
+from hyper_cmd.commands.base import BaseCommand
+from hyper_cmd.container.simple_container import SimpleContainer
+from hyper_cmd.mcp_server import (
     InteractiveCommandFilter,
     MCPCommandAnalyzer,
     MCPCommandExecutor,
@@ -245,7 +245,7 @@ class TestMCPServer:
 
     def setup_method(self):
         """Set up test fixtures."""
-        with patch("hyper_core.mcp_server.discover_commands") as mock_discover:
+        with patch("hyper_cmd.mcp_server.discover_commands") as mock_discover:
             # Mock command registry
             mock_registry = Mock()
             mock_registry.list_commands.return_value = ["safe", "interactive"]
@@ -406,6 +406,28 @@ class TestMCPServer:
         assert response["jsonrpc"] == "2.0"
         assert response["id"] == 4
         assert "result" in response
+
+    def test_handle_request_initialize(self):
+        """Test handling initialize request."""
+        request = {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": "2024-11-05"},
+        }
+
+        response = self.server.handle_request(request)
+
+        assert response["jsonrpc"] == "2.0"
+        assert response["id"] == 1
+        assert "result" in response
+
+        result = response["result"]
+        assert result["protocolVersion"] == "2024-11-05"
+        assert "capabilities" in result
+        assert "serverInfo" in result
+        assert result["serverInfo"]["name"] == "hyper-cmd"
+        assert result["serverInfo"]["version"] == "0.1.0"
 
     def test_handle_request_invalid_method(self):
         """Test handling invalid method request."""

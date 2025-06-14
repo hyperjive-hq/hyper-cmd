@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
-from hyper_core.cli import (
+from hyper_cmd.cli import (
     check_completion_installed,
     get_bash_completion_script,
     get_fish_completion_script,
@@ -126,21 +126,21 @@ class TestCompletionInstallation:
     def test_install_shell_completion_zsh(self):
         """Test shell completion installation for zsh."""
         with patch.dict(os.environ, {"SHELL": "/bin/zsh"}):
-            with patch("hyper_core.cli.install_zsh_completion") as mock_install:
+            with patch("hyper_cmd.cli.install_zsh_completion") as mock_install:
                 install_shell_completion()
                 mock_install.assert_called_once()
 
     def test_install_shell_completion_bash(self):
         """Test shell completion installation for bash."""
         with patch.dict(os.environ, {"SHELL": "/bin/bash"}):
-            with patch("hyper_core.cli.install_bash_completion") as mock_install:
+            with patch("hyper_cmd.cli.install_bash_completion") as mock_install:
                 install_shell_completion()
                 mock_install.assert_called_once()
 
     def test_install_shell_completion_fish(self):
         """Test shell completion installation for fish."""
         with patch.dict(os.environ, {"SHELL": "/usr/bin/fish"}):
-            with patch("hyper_core.cli.install_fish_completion") as mock_install:
+            with patch("hyper_cmd.cli.install_fish_completion") as mock_install:
                 install_shell_completion()
                 mock_install.assert_called_once()
 
@@ -291,7 +291,7 @@ class TestCompletionCLIFlags:
 
     def test_install_completion_flag(self):
         """Test --install-completion flag."""
-        with patch("hyper_core.cli.install_shell_completion") as mock_install:
+        with patch("hyper_cmd.cli.install_shell_completion") as mock_install:
             result = self.runner.invoke(main, ["--install-completion"])
 
             assert result.exit_code == 0
@@ -318,8 +318,8 @@ class TestCompletionUserGuidance:
     def test_main_shows_completion_tip_when_not_installed(self):
         """Test that main CLI shows completion tip when not installed."""
         with patch.dict(os.environ, {"SHELL": "/bin/zsh"}):
-            with patch("hyper_core.cli.check_completion_installed") as mock_check:
-                with patch("hyper_core.cli.discover_commands") as mock_discover:
+            with patch("hyper_cmd.cli.check_completion_installed") as mock_check:
+                with patch("hyper_cmd.cli.discover_commands") as mock_discover:
                     mock_check.return_value = False
                     mock_registry = MagicMock()
                     mock_registry.list_commands.return_value = ["init"]
@@ -335,8 +335,8 @@ class TestCompletionUserGuidance:
     def test_main_shows_completion_tip_when_installed(self):
         """Test that main CLI shows usage tip when completion is installed."""
         with patch.dict(os.environ, {"SHELL": "/bin/zsh"}):
-            with patch("hyper_core.cli.check_completion_installed") as mock_check:
-                with patch("hyper_core.cli.discover_commands") as mock_discover:
+            with patch("hyper_cmd.cli.check_completion_installed") as mock_check:
+                with patch("hyper_cmd.cli.discover_commands") as mock_discover:
                     mock_check.return_value = True
                     mock_registry = MagicMock()
                     mock_registry.list_commands.return_value = ["init"]
@@ -350,7 +350,7 @@ class TestCompletionUserGuidance:
     def test_main_no_completion_tip_for_unsupported_shell(self):
         """Test that main CLI doesn't show completion tip for unsupported shells."""
         with patch.dict(os.environ, {"SHELL": "/bin/tcsh"}):
-            with patch("hyper_core.cli.discover_commands") as mock_discover:
+            with patch("hyper_cmd.cli.discover_commands") as mock_discover:
                 mock_registry = MagicMock()
                 mock_registry.list_commands.return_value = ["init"]
                 mock_discover.return_value = mock_registry
@@ -364,7 +364,7 @@ class TestCompletionUserGuidance:
     def test_main_with_subcommand_no_completion_tip(self):
         """Test that completion tips don't show when running subcommands."""
         with patch.dict(os.environ, {"SHELL": "/bin/zsh"}):
-            with patch("hyper_core.cli.check_completion_installed"):
+            with patch("hyper_cmd.cli.check_completion_installed"):
                 result = self.runner.invoke(main, ["init", "--help"])
 
                 # Should not show completion tips when running subcommands

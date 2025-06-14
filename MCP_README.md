@@ -12,10 +12,10 @@ The MCP server exposes all Hyper CLI commands as MCP tools, enabling AI agents t
 
 ## Installation & Quick Setup
 
-The MCP server is included with Hyper Core and can be set up easily:
+The MCP server is included with Hyper CMD and can be set up easily:
 
 ```bash
-# 1. Install Hyper Core (if not already installed)
+# 1. Install Hyper CMD (if not already installed)
 pip install -e .
 
 # 2. Generate MCP configuration automatically
@@ -55,11 +55,11 @@ hyper init-mcp
 ```json
 {
   "mcpServers": {
-    "hyper-core": {
+    "hyper-cmd": {
       "command": "hyper-mcp",
       "args": [],
       "env": {},
-      "description": "Hyper CLI commands via MCP for AI integration"
+      "description": "Hyper CMD CLI commands via MCP for AI integration"
     }
   }
 }
@@ -72,11 +72,11 @@ The `hyper init-mcp` command generates a complete `.mcp.json` file. A sample is 
 ```json
 {
   "mcpServers": {
-    "hyper-core": {
+    "hyper-cmd": {
       "command": "hyper-mcp",
       "args": [],
       "env": {},
-      "description": "Hyper CLI commands via MCP for AI integration"
+      "description": "Hyper CMD CLI commands via MCP for AI integration"
     }
   }
 }

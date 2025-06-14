@@ -7,11 +7,11 @@ requiring ncurses, allowing testing in any environment.
 
 import pytest
 
-from hyper_core.ui.components import ApplicationFrame, Header, MenuBar, StatusBar, Text
-from hyper_core.ui.containers import BorderedContainer
-from hyper_core.ui.engine import RenderContext, RenderEngine, UIComponent
-from hyper_core.ui.framework import NCursesFramework
-from hyper_core.ui.renderer import BoxChars, MockBackend, TextStyle
+from hyper_cmd.ui.components import ApplicationFrame, Header, MenuBar, StatusBar, Text
+from hyper_cmd.ui.containers import BorderedContainer
+from hyper_cmd.ui.engine import RenderContext, RenderEngine, UIComponent
+from hyper_cmd.ui.framework import NCursesFramework
+from hyper_cmd.ui.renderer import BoxChars, MockBackend, TextStyle
 
 
 class TestUIComponents:

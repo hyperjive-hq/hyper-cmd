@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "hyper-core": {
+    "hyper-cmd": {
       "command": "hyper-mcp",
       "args": [],
       "env": {},
-      "description": "Hyper CLI commands via MCP for AI integration"
+      "description": "Hyper CMD CLI commands via MCP for AI integration"
     }
   }
 }

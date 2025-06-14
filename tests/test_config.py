@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 import yaml
 
-from hyper_core.config import HyperConfig, find_hyper_directory, get_config, reset_config
+from hyper_cmd.config import HyperConfig, find_hyper_directory, get_config, reset_config
 
 
 class TestHyperConfig:
@@ -187,7 +187,7 @@ class TestPluginIntegration:
 
     def test_plugin_loader_uses_hyper_plugins(self, tmp_path):
         """Test that PluginLoader includes .hyper/plugins in search paths."""
-        from hyper_core.plugins.loader import PluginLoader
+        from hyper_cmd.plugins.loader import PluginLoader
 
         # Create .hyper directory with plugins
         hyper_dir = tmp_path / ".hyper"
@@ -205,7 +205,7 @@ class TestPluginIntegration:
 
     def test_plugin_registry_initialization(self, tmp_path):
         """Test that PluginRegistry initializes with .hyper/plugins."""
-        from hyper_core.plugins.registry import PluginRegistry
+        from hyper_cmd.plugins.registry import PluginRegistry
 
         # Create .hyper directory
         hyper_dir = tmp_path / ".hyper"

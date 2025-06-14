@@ -5,8 +5,8 @@ from unittest.mock import Mock, patch
 
 from rich.console import Console
 
-from hyper_core import BaseCommand, SimpleContainer
-from hyper_core.commands import CommandRegistry
+from hyper_cmd import BaseCommand, SimpleContainer
+from hyper_cmd.commands import CommandRegistry
 
 
 class DatabaseMigrationCommand(BaseCommand):

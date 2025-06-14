@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from hyper_core.commands.mcp_init import MCPConfigGenerator, McpInitCommand, MCPToolDetector
-from hyper_core.container.simple_container import SimpleContainer
+from hyper_cmd.commands.mcp_init import MCPConfigGenerator, McpInitCommand, MCPToolDetector
+from hyper_cmd.container.simple_container import SimpleContainer
 
 
 class TestMCPConfigGenerator:
@@ -20,15 +20,15 @@ class TestMCPConfigGenerator:
 
         # Check structure
         assert "mcpServers" in config
-        assert "hyper-core" in config["mcpServers"]
+        assert "hyper-cmd" in config["mcpServers"]
         assert "$schema" in config
         assert "version" in config
         assert "description" in config
 
-        # Check hyper-core server config
-        hyper_config = config["mcpServers"]["hyper-core"]
-        assert hyper_config["command"] == "hyper-mcp"
-        assert hyper_config["args"] == []
+        # Check hyper-cmd server config
+        hyper_config = config["mcpServers"]["hyper-cmd"]
+        assert hyper_config["command"] == "uvx"
+        assert hyper_config["args"] == ["--from", ".", "hyper-mcp"]
         assert hyper_config["env"] == {}
         assert "description" in hyper_config
 
@@ -107,17 +107,17 @@ class TestMCPConfigGenerator:
 
         # Should have both servers
         assert "other-server" in result["mcpServers"]
-        assert "hyper-core" in result["mcpServers"]
+        assert "hyper-cmd" in result["mcpServers"]
         # Should update version
         assert result["version"] == "1.0"
         # Should update schema
         assert result["$schema"] == MCPConfigGenerator.MCP_SCHEMA_URL
 
-    def test_merge_config_update_existing_hyper_core(self):
-        """Test merging config that updates existing hyper-core server."""
+    def test_merge_config_update_existing_hyper_cmd(self):
+        """Test merging config that updates existing hyper-cmd server."""
         existing_config = {
             "mcpServers": {
-                "hyper-core": {"command": "old-command", "args": ["old"]},
+                "hyper-cmd": {"command": "old-command", "args": ["old"]},
                 "other-server": {"command": "other", "args": []},
             }
         }
@@ -125,9 +125,9 @@ class TestMCPConfigGenerator:
 
         result = MCPConfigGenerator.merge_config(existing_config, new_config)
 
-        # Should update hyper-core server
-        assert result["mcpServers"]["hyper-core"]["command"] == "hyper-mcp"
-        assert result["mcpServers"]["hyper-core"]["args"] == []
+        # Should update hyper-cmd server
+        assert result["mcpServers"]["hyper-cmd"]["command"] == "uvx"
+        assert result["mcpServers"]["hyper-cmd"]["args"] == ["--from", ".", "hyper-mcp"]
         # Should keep other server
         assert "other-server" in result["mcpServers"]
 
@@ -228,7 +228,7 @@ class TestMcpInitCommand:
                 config = json.load(f)
 
             assert "mcpServers" in config
-            assert "hyper-core" in config["mcpServers"]
+            assert "hyper-cmd" in config["mcpServers"]
 
     def test_execute_current_directory(self):
         """Test execution in current directory."""
@@ -428,7 +428,7 @@ class TestMcpInitCommand:
                 with open(config_file) as f:
                     config = json.load(f)
 
-                assert "hyper-core" in config["mcpServers"]
+                assert "hyper-cmd" in config["mcpServers"]
 
     def test_execute_with_cancellation(self):
         """Test execution cancelled by user."""
@@ -452,6 +452,21 @@ class TestMcpInitCommand:
             exit_code = self.command.execute(force=True, config_path="/tmp")
 
             assert exit_code == 1
+
+    def test_execute_uvx_not_available(self):
+        """Test execution when uvx is not available."""
+        with patch("shutil.which", return_value=None):
+            exit_code = self.command.execute(force=True, config_path="/tmp")
+
+            assert exit_code == 1
+
+    def test_execute_uvx_available(self):
+        """Test execution when uvx is available."""
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            with patch("shutil.which", return_value="/usr/bin/uvx"):
+                exit_code = self.command.execute(force=True, config_path=tmp_dir)
+
+                assert exit_code == 0
 
     def test_show_next_steps(self):
         """Test next steps display."""
@@ -477,8 +492,8 @@ class TestMcpInitCommand:
                 config = json.load(f)
 
             assert "mcpServers" in config
-            server_config = config["mcpServers"]["hyper-core"]
-            assert server_config["command"] == "hyper-mcp"
+            server_config = config["mcpServers"]["hyper-cmd"]
+            assert server_config["command"] == "uvx"
 
             # Verify config has required fields for MCP
             assert "$schema" in config
@@ -490,7 +505,7 @@ class TestMCPInitIntegration:
 
     def test_command_available_in_registry(self):
         """Test that init-mcp command is properly registered."""
-        from hyper_core.cli import discover_commands
+        from hyper_cmd.cli import discover_commands
 
         registry = discover_commands()
         commands = registry.list_commands()
@@ -507,7 +522,7 @@ class TestMCPInitIntegration:
 
     def test_command_available_via_mcp(self):
         """Test that init-mcp command is available via MCP server."""
-        from hyper_core.mcp_server import MCPServer
+        from hyper_cmd.mcp_server import MCPServer
 
         server = MCPServer()
         tools = server.get_tools()
@@ -522,7 +537,7 @@ class TestMCPInitIntegration:
 
     def test_end_to_end_workflow(self):
         """Test complete end-to-end workflow."""
-        from hyper_core.mcp_server import MCPServer
+        from hyper_cmd.mcp_server import MCPServer
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             # 1. Execute init-mcp via MCP server
@@ -555,5 +570,5 @@ class TestMCPInitIntegration:
                 config = json.load(f)
 
             assert "mcpServers" in config
-            assert "hyper-core" in config["mcpServers"]
-            assert config["mcpServers"]["hyper-core"]["command"] == "hyper-mcp"
+            assert "hyper-cmd" in config["mcpServers"]
+            assert config["mcpServers"]["hyper-cmd"]["command"] == "uvx"

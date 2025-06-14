@@ -3,7 +3,7 @@
 import curses
 from unittest.mock import Mock, patch
 
-from hyper_core.ui import (
+from hyper_cmd.ui import (
     BaseWidget,
     ContentPanel,
     LayoutConfig,
@@ -341,7 +341,7 @@ class TestThemeSystem:
         assert "custom" in available_themes
 
         # Test switching themes
-        from hyper_core.ui.renderer import MockBackend
+        from hyper_cmd.ui.renderer import MockBackend
 
         mock_backend = MockBackend()
         manager.set_theme("custom", mock_backend)

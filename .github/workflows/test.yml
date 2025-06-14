@@ -34,7 +34,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov=hyper_core --cov-report=xml --cov-report=term
+        pytest --cov=hyper_cmd --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -48,12 +48,12 @@ jobs:
     - name: Test CLI commands
       run: |
         # Test basic CLI functionality
-        python -m hyper_core.cli --help
+        python -m hyper_cmd.cli --help
         
         # Test init command in a temporary directory
         mkdir -p /tmp/test-hyper-init
         cd /tmp/test-hyper-init
-        python -m hyper_core.cli init --force
+        python -m hyper_cmd.cli init --force
         
         # Verify the structure was created
         test -d .hyper
@@ -62,7 +62,7 @@ jobs:
         test -d .hyper/plugins/hello_world
         
         # Test the example plugin
-        python -m hyper_core.cli hello --name "CI Test" --style simple
+        python -m hyper_cmd.cli hello --name "CI Test" --style simple
         
         # Clean up
         cd -
@@ -86,19 +86,19 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov=hyper_core
+        pytest --cov=hyper_cmd
 
     - name: Test CLI commands
       run: |
-        python -m hyper_core.cli --help
+        python -m hyper_cmd.cli --help
         
         # Test init command
         mkdir /tmp/test-hyper-init-mac
         cd /tmp/test-hyper-init-mac
-        python -m hyper_core.cli init --force
+        python -m hyper_cmd.cli init --force
         
         # Test the example plugin
-        python -m hyper_core.cli hello --name "macOS CI" --style simple
+        python -m hyper_cmd.cli hello --name "macOS CI" --style simple
         
         # Clean up
         cd -

@@ -23,7 +23,7 @@ def test_mcp_server():
     try:
         # Run the MCP server
         process = subprocess.Popen(
-            [sys.executable, "-c", "from hyper_core.mcp_server import main; main()"],
+            [sys.executable, "-c", "from hyper_cmd.mcp_server import main; main()"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -70,7 +70,7 @@ def test_mcp_server():
     
     try:
         process = subprocess.Popen(
-            [sys.executable, "-c", "from hyper_core.mcp_server import main; main()"],
+            [sys.executable, "-c", "from hyper_cmd.mcp_server import main; main()"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -114,7 +114,7 @@ def test_invalid_request():
     
     try:
         process = subprocess.Popen(
-            [sys.executable, "-m", "hyper_core.mcp_server"],
+            [sys.executable, "-m", "hyper_cmd.mcp_server"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -146,8 +146,8 @@ def test_interactive_filtering():
     print("\n4. Testing interactive command filtering...")
     
     try:
-        from hyper_core.mcp_server import MCPServer
-        from hyper_core.cli import discover_commands
+        from hyper_cmd.mcp_server import MCPServer
+        from hyper_cmd.cli import discover_commands
         
         server = MCPServer()
         registry = discover_commands()
@@ -197,7 +197,7 @@ def test_mcp_resources():
     print("\n5. Testing MCP resources...")
     
     try:
-        from hyper_core.mcp_server import MCPServer
+        from hyper_cmd.mcp_server import MCPServer
         
         server = MCPServer()
         
@@ -273,7 +273,7 @@ def test_mcp_init_command():
     print("\n6. Testing mcp-init command...")
     
     try:
-        from hyper_core.mcp_server import MCPServer
+        from hyper_cmd.mcp_server import MCPServer
         import tempfile
         import os
         

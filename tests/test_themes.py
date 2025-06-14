@@ -3,8 +3,8 @@
 import curses
 from unittest.mock import Mock
 
-from hyper_core.ui import BaseWidget, Theme, ThemeColors, ThemeManager, WidgetSize
-from hyper_core.ui.renderer import MockBackend
+from hyper_cmd.ui import BaseWidget, Theme, ThemeColors, ThemeManager, WidgetSize
+from hyper_cmd.ui.renderer import MockBackend
 
 
 class ThemedWidget(BaseWidget):

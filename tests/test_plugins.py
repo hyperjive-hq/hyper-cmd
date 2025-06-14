@@ -6,9 +6,9 @@ from pathlib import Path
 
 from rich.console import Console
 
-from hyper_core import BaseCommand, BaseWidget, WidgetSize
-from hyper_core.container import SimpleContainer
-from hyper_core.plugins import PluginMetadata, PluginRegistry, plugin_registry
+from hyper_cmd import BaseCommand, BaseWidget, WidgetSize
+from hyper_cmd.container import SimpleContainer
+from hyper_cmd.plugins import PluginMetadata, PluginRegistry, plugin_registry
 
 
 # Example Plugin Components
@@ -196,7 +196,7 @@ PLUGIN_NAME = "sample"
 PLUGIN_VERSION = "1.0.0"
 PLUGIN_DESCRIPTION = "Sample plugin for testing"
 
-from hyper_core import BaseCommand
+from hyper_cmd import BaseCommand
 
 class SampleCommand(BaseCommand):
     @property
@@ -214,7 +214,7 @@ class SampleCommand(BaseCommand):
             plugin_file.write_text(plugin_content)
 
             # Test plugin discovery
-            from hyper_core.plugins import PluginDiscovery
+            from hyper_cmd.plugins import PluginDiscovery
 
             discovery = PluginDiscovery(str(plugin_dir))
 
@@ -249,7 +249,7 @@ __all__ = ["CustomCommand", "CustomWidget"]
             # Create commands module
             commands_file = plugin_package / "commands.py"
             commands_content = """
-from hyper_core import BaseCommand
+from hyper_cmd import BaseCommand
 
 class CustomCommand(BaseCommand):
     @property
@@ -268,7 +268,7 @@ class CustomCommand(BaseCommand):
             # Create widgets module
             widgets_file = plugin_package / "widgets.py"
             widgets_content = """
-from hyper_core import BaseWidget, WidgetSize
+from hyper_cmd import BaseWidget, WidgetSize
 
 class CustomWidget(BaseWidget):
     def __init__(self):
@@ -285,7 +285,7 @@ class CustomWidget(BaseWidget):
             # Add to Python path temporarily
             sys.path.insert(0, str(temp_dir))
             try:
-                from hyper_core.plugins import PluginDiscovery
+                from hyper_cmd.plugins import PluginDiscovery
 
                 discovery = PluginDiscovery(str(temp_dir))
 

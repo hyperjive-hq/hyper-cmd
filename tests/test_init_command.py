@@ -6,8 +6,8 @@ from unittest import mock
 import pytest
 import yaml
 
-from hyper_core.commands.init import InitCommand
-from hyper_core.container.simple_container import SimpleContainer
+from hyper_cmd.commands.init import InitCommand
+from hyper_cmd.container.simple_container import SimpleContainer
 
 
 class TestInitCommand:
@@ -183,7 +183,7 @@ class TestInitCommandIntegration:
 
     def test_plugin_directory_integration(self, tmp_path):
         """Test that initialized project works with plugin loading."""
-        from hyper_core.config import HyperConfig, reset_config
+        from hyper_cmd.config import HyperConfig, reset_config
 
         # Initialize project
         container = SimpleContainer()
@@ -203,7 +203,7 @@ class TestInitCommandIntegration:
 
     def test_example_plugin_is_discoverable(self, tmp_path):
         """Test that the created example plugin can be discovered."""
-        from hyper_core.plugins.loader import PluginDiscovery
+        from hyper_cmd.plugins.loader import PluginDiscovery
 
         # Initialize project
         container = SimpleContainer()
@@ -224,7 +224,7 @@ class TestInitCommandIntegration:
 
     def test_init_command_available_in_registry(self):
         """Test that init command is properly registered."""
-        from hyper_core.commands.registry import CommandRegistry
+        from hyper_cmd.commands.registry import CommandRegistry
 
         registry = CommandRegistry()
         registry.register(InitCommand, "init")

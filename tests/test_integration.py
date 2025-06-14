@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 from rich.console import Console
 
-from hyper_core import (
+from hyper_cmd import (
     BaseCommand,
     PluginRegistry,
     SimpleContainer,
@@ -14,8 +14,8 @@ from hyper_core import (
     ThemeColors,
     ThemeManager,
 )
-from hyper_core.plugins import PluginDiscovery
-from hyper_core.ui import ContentPanel, NCursesFramework
+from hyper_cmd.plugins import PluginDiscovery
+from hyper_cmd.ui import ContentPanel, NCursesFramework
 
 # Complete Application Example Components
 
@@ -112,7 +112,7 @@ class ConfigurationService:
             "plugins": {
                 "enabled": True,
                 "auto_discover": True,
-                "plugin_directories": ["./plugins", "~/.hyper-core/plugins"],
+                "plugin_directories": ["./plugins", "~/.hyper-cmd/plugins"],
             },
         }
 
@@ -216,7 +216,7 @@ class ApplicationBootstrap:
         # Set default theme from config
         default_theme = config_service.get("ui.default_theme", "dark")
         if default_theme in theme_manager.get_available_themes():
-            from hyper_core.ui.renderer import MockBackend
+            from hyper_cmd.ui.renderer import MockBackend
 
             mock_backend = MockBackend()
             theme_manager.set_theme(default_theme, mock_backend)
@@ -237,7 +237,7 @@ class ApplicationBootstrap:
 
     def _register_core_commands(self):
         """Register core application commands."""
-        from hyper_core.commands import CommandRegistry
+        from hyper_cmd.commands import CommandRegistry
 
         command_registry = CommandRegistry()
         command_registry.register("monitor", SystemMonitorCommand)
@@ -315,7 +315,7 @@ PLUGIN_NAME = "integration_test"
 PLUGIN_VERSION = "1.0.0"
 PLUGIN_DESCRIPTION = "Integration test plugin"
 
-from hyper_core import BaseCommand, BaseWidget, WidgetSize
+from hyper_cmd import BaseCommand, BaseWidget, WidgetSize
 
 class TestCommand(BaseCommand):
     @property
@@ -383,7 +383,7 @@ class TestWidget(BaseWidget):
         assert "monitoring" in available_themes
 
         # Switch to monitoring theme
-        from hyper_core.ui.renderer import MockBackend
+        from hyper_cmd.ui.renderer import MockBackend
 
         mock_backend = MockBackend()
         theme_manager.set_theme("monitoring", mock_backend)
@@ -481,7 +481,7 @@ class TestRealWorldScenarios:
 
         # Switch to monitoring theme
         theme_manager = container.get("theme_manager")
-        from hyper_core.ui.renderer import MockBackend
+        from hyper_cmd.ui.renderer import MockBackend
 
         mock_backend = MockBackend()
         theme_manager.set_theme("monitoring", mock_backend)
@@ -516,7 +516,7 @@ PLUGIN_VERSION = "2.0.0"
 PLUGIN_DESCRIPTION = "Advanced system monitoring with alerts"
 PLUGIN_AUTHOR = "DevOps Team"
 
-from hyper_core import BaseCommand, BaseWidget, WidgetSize
+from hyper_cmd import BaseCommand, BaseWidget, WidgetSize
 
 class AlertCommand(BaseCommand):
     @property

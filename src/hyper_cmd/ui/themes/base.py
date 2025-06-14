@@ -6,7 +6,7 @@ applications. Themes define color pairs and can be switched at runtime.
 Example:
     Creating and using a custom theme::
 
-        from hyper_core.ui.themes import Theme, ThemeColors
+        from hyper_cmd.ui.themes import Theme, ThemeColors
 
         # Create a custom theme
         dark_theme = Theme(

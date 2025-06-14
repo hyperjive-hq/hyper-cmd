@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hyper-core"
+name = "hyper-cmd"
 version = "0.1.0"
-description = "Core framework for building plugin-based CLI applications with ncurses UI"
+description = "Command-line framework for building plugin-based CLI applications with ncurses UI"
 readme = "README.md"
 authors = [
     {name = "Hyper Team", email = "team@hyperjive.com"}
@@ -31,6 +31,7 @@ dependencies = [
     "click>=8.0",
     "rich>=13.0",
     "dependency-injector>=4.41.0",
+    "typing-extensions>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -44,20 +45,20 @@ dev = [
 ]
 
 [project.scripts]
-hyper = "hyper_core.cli:main"
-hyper-mcp = "hyper_core.mcp_server:main"
+hyper = "hyper_cmd.cli:main"
+hyper-mcp = "hyper_cmd.mcp_server:main"
 
 [project.urls]
-Homepage = "https://github.com/hyperjive/hyper-core"
-Documentation = "https://hyper-core.readthedocs.io"
-Repository = "https://github.com/hyperjive/hyper-core"
-Issues = "https://github.com/hyperjive/hyper-core/issues"
+Homepage = "https://github.com/hyperjive/hyper-cmd"
+Documentation = "https://hyper-cmd.readthedocs.io"
+Repository = "https://github.com/hyperjive/hyper-cmd"
+Issues = "https://github.com/hyperjive/hyper-cmd/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-hyper_core = ["py.typed"]
+hyper_cmd = ["py.typed"]
 
 [tool.black]
 line-length = 100
@@ -85,7 +86,7 @@ ignore = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["hyper_core"]
+known-first-party = ["hyper_cmd"]
 
 [tool.mypy]
 python_version = "3.9"
@@ -105,10 +106,10 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
-addopts = "-v --cov=hyper_core --cov-report=term-missing"
+addopts = "-v --cov=hyper_cmd --cov-report=term-missing"
 
 [tool.coverage.run]
-source = ["src/hyper_core"]
+source = ["src/hyper_cmd"]
 omit = ["*/tests/*", "*/__init__.py"]
 
 [tool.coverage.report]

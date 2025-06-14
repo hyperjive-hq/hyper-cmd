@@ -7,7 +7,7 @@ and other containers.
 Example:
     Creating a simple status widget::
 
-        from hyper_core.ui.widgets import BaseWidget, WidgetSize
+        from hyper_cmd.ui.widgets import BaseWidget, WidgetSize
 
         class StatusWidget(BaseWidget):
             def __init__(self):
