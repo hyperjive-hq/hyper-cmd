@@ -330,7 +330,7 @@ class BaseCommand(ABC, ICommand):
         if process.stderr:
             streams.append(process.stderr)
 
-        while streams and process.poll() is None:
+        while streams:
             ready, _, _ = select.select(streams, [], [], 0.1)
 
             for stream in ready:
@@ -345,6 +345,10 @@ class BaseCommand(ABC, ICommand):
                         self.console.print(f"[red]{line}[/]")
                 else:
                     streams.remove(stream)
+
+            # If no streams ready and process is done, break to avoid infinite loop
+            if not ready and process.poll() is not None:
+                break
 
     def _stream_process_output_simple(
         self, process, stdout_lines: list[str], stderr_lines: list[str]
