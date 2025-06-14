@@ -168,6 +168,192 @@ class ValidatedCommand(BaseCommand):
         return 0
 ```
 
+### Subprocess Operations
+
+BaseCommand provides robust subprocess integration for running external commands and tools:
+
+#### Basic Subprocess Execution
+
+```python
+class SubprocessCommand(BaseCommand):
+    def execute(self, build_target: str = "dev") -> int:
+        # Run subprocess with output capture
+        result = self.run_subprocess(
+            ["npm", "run", "build", f"--mode={build_target}"],
+            capture_output=True,
+            show_output=True
+        )
+        
+        if result.returncode == 0:
+            self.print_success("Build completed successfully")
+            
+            # Access captured output
+            stdout = self.get_captured_output()
+            if "warnings" in stdout.lower():
+                self.print_warning("Build completed with warnings")
+            
+            return 0
+        else:
+            self.print_error(f"Build failed with exit code {result.returncode}")
+            return result.returncode
+```
+
+#### Streaming Subprocess Output
+
+For long-running processes, use streaming to show real-time output:
+
+```python
+class StreamingCommand(BaseCommand):
+    def execute(self, test_suite: str = "all") -> int:
+        # Stream subprocess output in real-time
+        with self.show_progress("Running tests"):
+            result = self.run_subprocess_streaming(
+                ["pytest", f"tests/{test_suite}", "-v"],
+                cwd=self.get_project_root()
+            )
+        
+        if result.returncode == 0:
+            self.print_success("All tests passed!")
+        else:
+            self.print_error("Some tests failed")
+            
+        return result.returncode
+```
+
+#### Managing Subprocess Output
+
+```python
+class OutputManagementCommand(BaseCommand):
+    def execute(self) -> int:
+        # Clear any previous output
+        self.clear_captured_output()
+        
+        # Run multiple commands and accumulate output
+        commands = [
+            ["git", "status", "--porcelain"],
+            ["git", "log", "--oneline", "-5"],
+            ["git", "branch", "-v"]
+        ]
+        
+        for cmd in commands:
+            result = self.run_subprocess(cmd, capture_output=True)
+            if result.returncode != 0:
+                self.print_error(f"Command failed: {' '.join(cmd)}")
+                return result.returncode
+        
+        # Process all captured output
+        all_output = self.get_captured_output()
+        self.console.print(f"Git information:\n{all_output}")
+        
+        return 0
+```
+
+### Validation Utilities
+
+BaseCommand includes utility methods for common validation tasks:
+
+#### Port Validation
+
+```python
+class NetworkCommand(BaseCommand):
+    def execute(self, port: str, host: str = "localhost") -> int:
+        # Validate port format (string to int, range check)
+        if not self.validate_port(port):
+            self.print_error(f"Invalid port format: {port}")
+            return 1
+        
+        port_num = int(port)
+        
+        # Check if port is available
+        if not self.check_port_available(port_num, host):
+            self.print_error(f"Port {port_num} is already in use on {host}")
+            return 1
+        
+        self.print_success(f"Port {port_num} is available on {host}")
+        return 0
+```
+
+#### Path and File Validation
+
+```python
+class FileCommand(BaseCommand):
+    def execute(self, input_file: str, output_dir: str) -> int:
+        input_path = Path(input_file)
+        output_path = Path(output_dir)
+        
+        # Validate input file exists
+        if not self.validate_path(input_path, must_exist=True, must_be_file=True):
+            return 1
+        
+        # Ensure output directory exists (create if needed)
+        if not self.ensure_directory(output_path):
+            self.print_error(f"Could not create output directory: {output_path}")
+            return 1
+        
+        # Validate output directory is writable
+        if not self.validate_path(output_path, must_exist=True, must_be_dir=True):
+            return 1
+        
+        # Get project root for relative path operations
+        project_root = self.get_project_root()
+        relative_input = input_path.relative_to(project_root)
+        
+        self.print_info(f"Processing {relative_input}")
+        # File processing logic here
+        
+        return 0
+```
+
+### MCP Integration
+
+BaseCommand automatically captures subprocess output for MCP (Model Context Protocol) clients, enabling AI tools to access command results:
+
+#### Automatic Output Capture
+
+```python
+class MCPAwareCommand(BaseCommand):
+    def execute(self, analyze: bool = False) -> int:
+        # Output is automatically captured for MCP clients
+        result = self.run_subprocess(["git", "log", "--oneline", "-10"])
+        
+        if analyze:
+            # Additional analysis commands - output also captured
+            self.run_subprocess(["git", "diff", "--stat"])
+            self.run_subprocess(["git", "status", "--porcelain"])
+        
+        if result.returncode == 0:
+            self.print_success("Git information collected")
+            
+            # MCP clients can access all captured output
+            # No additional code needed - framework handles it
+            return 0
+        else:
+            self.print_error("Failed to collect git information")
+            return result.returncode
+```
+
+#### Manual Output Management for MCP
+
+```python
+class AdvancedMCPCommand(BaseCommand):
+    def execute(self, command: str, clear_previous: bool = True) -> int:
+        if clear_previous:
+            # Clear any previous captured output
+            self.clear_captured_output()
+        
+        # Run user-specified command
+        result = self.run_subprocess(command.split(), capture_output=True)
+        
+        # Get captured output for processing
+        output = self.get_captured_output()
+        
+        if "error" in output.lower():
+            self.print_warning("Command output contains errors")
+        
+        # Output is available to MCP clients regardless of our processing
+        return result.returncode
+```
+
 ### Prompting for User Input
 
 `BaseCommand` provides convenience helpers for interactive prompts so you don't
@@ -519,6 +705,8 @@ class ThemedWidget(BaseWidget, IThemeable):
 
 ### 1. Error Handling
 
+BaseCommand provides comprehensive error handling with standardized exit codes:
+
 ```python
 class RobustCommand(BaseCommand):
     def execute(self) -> int:
@@ -526,13 +714,69 @@ class RobustCommand(BaseCommand):
             # Command logic
             result = self.risky_operation()
             self.print_success(f"Operation completed: {result}")
-            return 0
+            return 0  # Success
+        except KeyboardInterrupt:
+            # Ctrl+C handling - framework returns 130 automatically
+            self.print_warning("Operation cancelled by user")
+            raise  # Let framework handle the exit code
         except SpecificError as e:
             self.print_error(f"Specific error occurred: {e}")
-            return 2
+            return 2  # Specific error code
         except Exception as e:
             self.print_error(f"Unexpected error: {e}")
-            return 1
+            return 1  # General error
+    
+    def risky_operation(self):
+        # Simulate operation that might fail
+        import random
+        if random.random() < 0.3:
+            raise SpecificError("Something went wrong")
+        return "success"
+
+class SpecificError(Exception):
+    pass
+```
+
+#### Exit Code Conventions
+
+BaseCommand follows standard Unix exit code conventions:
+- `0`: Success
+- `1`: General error
+- `2`: Specific/application error
+- `130`: Interrupted by SIGINT (Ctrl+C) - handled automatically
+
+#### Advanced Error Handling
+
+```python
+class DetailedErrorCommand(BaseCommand):
+    def execute(self, strict: bool = False) -> int:
+        errors = []
+        
+        try:
+            self.validate_environment()
+        except ValidationError as e:
+            if strict:
+                self.print_error(f"Validation failed: {e}")
+                return 1
+            else:
+                errors.append(f"Warning: {e}")
+        
+        try:
+            self.perform_operation()
+        except OperationError as e:
+            self.print_error(f"Operation failed: {e}")
+            if errors:
+                self.print_warning(f"Additional issues: {'; '.join(errors)}")
+            return 2
+        
+        if errors:
+            for error in errors:
+                self.print_warning(error)
+            self.print_info("Operation completed with warnings")
+        else:
+            self.print_success("Operation completed successfully")
+        
+        return 0
 ```
 
 ### 2. Configuration Management
@@ -630,6 +874,166 @@ sequenceDiagram
     Plugin->>Container: Cleanup services
 ```
 
+## Advanced Extension Points
+
+For power users who need to extend BaseCommand beyond standard patterns:
+
+### Lifecycle Hooks
+
+```python
+class LifecycleAwareCommand(BaseCommand):
+    def run(self, *args, **kwargs) -> int:
+        """Override run() to add pre/post execution hooks."""
+        # Pre-execution setup
+        self.clear_captured_output()  # Framework normally does this
+        self.pre_execute_hook()
+        
+        try:
+            # Call the standard execution flow
+            result = super().run(*args, **kwargs)
+            
+            # Post-execution cleanup
+            self.post_execute_hook(result)
+            return result
+        except Exception as e:
+            self.on_execution_error(e)
+            raise
+    
+    def pre_execute_hook(self) -> None:
+        """Called before execute() method."""
+        self.print_info("Initializing command execution")
+    
+    def post_execute_hook(self, result: int) -> None:
+        """Called after execute() method."""
+        if result == 0:
+            self.print_info("Command execution completed successfully")
+        else:
+            self.print_warning(f"Command execution finished with code {result}")
+    
+    def on_execution_error(self, error: Exception) -> None:
+        """Called when execute() raises an exception."""
+        self.print_error(f"Command execution failed: {error}")
+```
+
+### Custom Output Capture
+
+```python
+class CustomCaptureCommand(BaseCommand):
+    def __init__(self, container):
+        super().__init__(container)
+        self.custom_output = []
+    
+    def run_subprocess(self, cmd, **kwargs):
+        """Override to add custom output processing."""
+        result = super().run_subprocess(cmd, **kwargs)
+        
+        # Add custom metadata to captured output
+        if hasattr(result, 'stdout') and result.stdout:
+            self.custom_output.append({
+                'command': cmd,
+                'output': result.stdout,
+                'timestamp': time.time(),
+                'exit_code': result.returncode
+            })
+        
+        return result
+    
+    def get_command_history(self) -> list:
+        """Get history of all commands run by this instance."""
+        return self.custom_output.copy()
+```
+
+### Advanced Console Integration
+
+```python
+class RichIntegrationCommand(BaseCommand):
+    def execute(self) -> int:
+        # Access Rich console directly for advanced formatting
+        console = self.console
+        
+        # Create custom panels and layouts
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.columns import Columns
+        
+        # Create a table with data
+        table = Table(title="System Information")
+        table.add_column("Component", style="cyan")
+        table.add_column("Status", style="magenta")
+        table.add_column("Details", style="green")
+        
+        table.add_row("Database", "Connected", "127.0.0.1:5432")
+        table.add_row("Cache", "Running", "Redis 6.2.6")
+        table.add_row("API", "Healthy", "Response time: 45ms")
+        
+        # Display in a panel
+        console.print(Panel(table, title="Service Status", border_style="blue"))
+        
+        # Use progress context with custom styling
+        with console.status("[bold green]Processing data...") as status:
+            for i in range(10):
+                status.update(f"[bold green]Processing item {i+1}/10...")
+                time.sleep(0.1)
+        
+        return 0
+```
+
+### Dynamic Command Properties
+
+```python
+class DynamicCommand(BaseCommand):
+    def __init__(self, container, command_name: str = None):
+        super().__init__(container)
+        self._dynamic_name = command_name
+        self._dynamic_description = f"Dynamic command: {command_name}"
+    
+    @property
+    def name(self) -> str:
+        if self._dynamic_name:
+            return self._dynamic_name
+        return self._generate_default_name()  # Use framework's default naming
+    
+    @property
+    def description(self) -> str:
+        return self._dynamic_description
+    
+    def update_metadata(self, name: str, description: str) -> None:
+        """Update command metadata dynamically."""
+        self._dynamic_name = name
+        self._dynamic_description = description
+```
+
+### Container Extension
+
+```python
+class ContainerExtensionCommand(BaseCommand):
+    def __init__(self, container):
+        super().__init__(container)
+        
+        # Register additional services during initialization
+        self._register_runtime_services()
+    
+    def _register_runtime_services(self) -> None:
+        """Register services that weren't available during plugin registration."""
+        if not self.container.has(RuntimeService):
+            service = RuntimeService()
+            self.container.register(RuntimeService, service)
+    
+    def execute(self) -> int:
+        # Access both pre-registered and runtime services
+        runtime_service = self.container.get(RuntimeService)
+        
+        # Use service
+        result = runtime_service.perform_operation()
+        self.print_success(f"Runtime operation result: {result}")
+        
+        return 0
+
+class RuntimeService:
+    def perform_operation(self) -> str:
+        return "Runtime service operation completed"
+```
+
 ## Troubleshooting
 
 ### Common Issues
@@ -638,6 +1042,8 @@ sequenceDiagram
 2. **Import errors**: Ensure all dependencies are installed
 3. **Service injection fails**: Verify service is registered in container
 4. **UI rendering issues**: Check terminal size and curses error handling
+5. **Subprocess output not captured**: Ensure `capture_output=True` in `run_subprocess()`
+6. **MCP integration not working**: Check that commands are properly registered and inherit from BaseCommand
 
 ### Debugging
 
@@ -651,9 +1057,47 @@ logger = logging.getLogger(__name__)
 class DebuggableCommand(BaseCommand):
     def execute(self) -> int:
         logger.debug("Starting command execution")
-        # Command logic with debug statements
+        
+        # Debug subprocess execution
+        result = self.run_subprocess(["echo", "test"], capture_output=True)
+        logger.debug(f"Subprocess result: {result.returncode}")
+        logger.debug(f"Captured output: {self.get_captured_output()}")
+        
+        # Debug container access
+        try:
+            service = self.container.get(MyService)
+            logger.debug(f"Service accessed: {service}")
+        except Exception as e:
+            logger.debug(f"Service access failed: {e}")
+        
         logger.debug("Command completed")
         return 0
+```
+
+### Performance Considerations
+
+```python
+class OptimizedCommand(BaseCommand):
+    def execute(self, batch_size: int = 100) -> int:
+        # Minimize subprocess calls by batching
+        items = self.get_items_to_process()
+        
+        for i in range(0, len(items), batch_size):
+            batch = items[i:i + batch_size]
+            
+            # Single subprocess call for batch
+            batch_args = [str(item) for item in batch]
+            result = self.run_subprocess(["process_batch"] + batch_args)
+            
+            if result.returncode != 0:
+                self.print_error(f"Batch {i//batch_size + 1} failed")
+                return result.returncode
+        
+        return 0
+    
+    def get_items_to_process(self) -> list:
+        # Return items to process
+        return list(range(1000))
 ```
 
 ## Examples

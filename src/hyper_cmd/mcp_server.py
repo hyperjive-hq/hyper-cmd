@@ -4,9 +4,7 @@ This module provides an MCP (Model Context Protocol) server that exposes
 all Hyper CLI commands as MCP tools for AI integration.
 """
 
-import contextlib
 import inspect
-import io
 import json
 import sys
 import traceback
@@ -291,17 +289,36 @@ class MCPCommandExecutor:
         return filtered_args, extra_args
 
     def _execute_with_capture(self, instance, extra_args: list, filtered_args: dict) -> tuple:
-        """Execute command with stdout/stderr capture."""
-        stdout_capture = io.StringIO()
-        stderr_capture = io.StringIO()
+        """Execute command with output capture using BaseCommand's built-in mechanisms.
 
-        with contextlib.redirect_stdout(stdout_capture), contextlib.redirect_stderr(stderr_capture):
+        This method leverages BaseCommand's subprocess helpers to ensure all output
+        from subprocess calls is properly captured for MCP clients.
+
+        Args:
+            instance: Command instance to execute
+            extra_args: Positional arguments for the command
+            filtered_args: Keyword arguments for the command
+
+        Returns:
+            Tuple of (stdout, stderr, exit_code)
+        """
+        try:
+            # Execute the command using the run method which automatically clears captured output
             if extra_args:
-                exit_code = instance.execute(*extra_args, **filtered_args)
+                exit_code = instance.run(*extra_args, **filtered_args)
             else:
-                exit_code = instance.execute(**filtered_args)
+                exit_code = instance.run(**filtered_args)
 
-        return stdout_capture.getvalue(), stderr_capture.getvalue(), exit_code
+            # Get captured output from the command instance
+            stdout_output, stderr_output = instance.get_captured_output()
+
+            return stdout_output, stderr_output, exit_code or 0
+
+        except Exception as e:
+            # If BaseCommand.run() somehow fails, capture the error
+            # This is a fallback for non-BaseCommand classes or severe errors
+            error_msg = str(e)
+            return "", error_msg, 1
 
     def _build_response(
         self, cmd_name: str, stdout_output: str, stderr_output: str, exit_code: int
